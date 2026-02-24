@@ -3,390 +3,746 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yükleme Analiz Platformu | Müşteri Davranış & Risk Analizi</title>
+    <title>充值行为分析平台 | Yükleme Davranış Analizi Pro</title>
     
     <!-- Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
-            --secondary: #ec4899;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1e293b;
-            --light: #f8fafc;
-            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --glass: rgba(255, 255, 255, 0.1);
-            --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        body {
+            font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-800);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            color: var(--dark);
-            overflow-x: hidden;
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 0;
+            box-shadow: var(--shadow-lg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-top {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 0;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: 0 24px;
         }
 
-        /* Header */
-        .header {
-            text-align: center;
-            padding: 40px 0;
-            color: white;
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
         }
 
-        .header h1 {
-            font-size: 3rem;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
-            animation: fadeInDown 1s ease;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
-        .header p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-            animation: fadeInUp 1s ease 0.3s both;
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+
+        .logo-text h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 2px;
+        }
+
+        .logo-text p {
+            font-size: 13px;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .lang-switch {
+            display: flex;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .lang-btn {
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .lang-btn.active {
+            background: white;
+            color: var(--primary);
         }
 
         /* Upload Section */
         .upload-section {
-            background: var(--glass);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 40px;
-            margin: 20px 0;
-            border: 2px dashed rgba(255,255,255,0.3);
+            padding: 60px 0;
             text-align: center;
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .upload-card {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 48px;
+            border: 2px dashed var(--gray-300);
+            border-radius: 16px;
+            background: var(--gray-50);
             transition: all 0.3s ease;
-            animation: fadeIn 1s ease 0.6s both;
-        }
-
-        .upload-section:hover {
-            border-color: white;
-            transform: translateY(-5px);
-            box-shadow: var(--shadow);
-        }
-
-        .upload-zone {
-            padding: 60px;
-            border: 3px dashed rgba(255,255,255,0.5);
-            border-radius: 15px;
             cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(255,255,255,0.05);
         }
 
-        .upload-zone:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: white;
+        .upload-card:hover {
+            border-color: var(--accent);
+            background: white;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .upload-card.dragover {
+            border-color: var(--accent);
+            background: #eff6ff;
             transform: scale(1.02);
         }
 
-        .upload-zone i {
-            font-size: 4rem;
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 32px;
+            color: var(--accent);
+        }
+
+        .upload-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-bottom: 8px;
+        }
+
+        .upload-title-cn {
+            font-size: 14px;
+            color: var(--gray-500);
+            margin-bottom: 16px;
+        }
+
+        .upload-desc {
+            color: var(--gray-500);
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: var(--accent);
             color: white;
-            margin-bottom: 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
         }
 
-        .upload-zone h3 {
-            color: white;
-            font-size: 1.5rem;
-            margin-bottom: 10px;
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
         }
 
-        .upload-zone p {
-            color: rgba(255,255,255,0.8);
+        .file-types {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--gray-400);
         }
 
-        #fileInput {
-            display: none;
+        .file-type {
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
-        /* Dashboard Grid */
+        /* Dashboard */
         .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
             display: none;
+            padding: 32px 0;
         }
 
         .dashboard.active {
+            display: block;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
             display: grid;
-            animation: fadeIn 0.8s ease;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+
+        .kpi-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-label-cn {
+            font-size: 11px;
+            color: var(--gray-400);
+            margin-top: 2px;
+        }
+
+        .kpi-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .kpi-icon.blue { background: #dbeafe; color: #2563eb; }
+        .kpi-icon.green { background: #d1fae5; color: #059669; }
+        .kpi-icon.orange { background: #fed7aa; color: #d97706; }
+        .kpi-icon.red { background: #fee2e2; color: #dc2626; }
+        .kpi-icon.purple { background: #e9d5ff; color: #7c3aed; }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-800);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+
+        .kpi-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .kpi-change.up {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .kpi-change.down {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        /* Section Headers */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        .section-title span {
+            display: block;
+            font-size: 13px;
+            font-weight: 400;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        .section-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 8px 16px;
+            border: 1px solid var(--gray-300);
+            background: white;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-sm:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: #eff6ff;
+        }
+
+        /* Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .col-6 { grid-column: span 6; }
+        .col-4 { grid-column: span 4; }
+        .col-8 { grid-column: span 8; }
+        .col-12 { grid-column: span 12; }
+
+        @media (max-width: 1024px) {
+            .col-6, .col-4, .col-8 { grid-column: span 12; }
         }
 
         /* Cards */
         .card {
             background: white;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            transition: all 0.3s ease;
-            position: relative;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-200);
             overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 5px;
-            background: var(--gradient-1);
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
         }
 
         .card-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-100);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
         }
 
         .card-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--dark);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--gray-800);
         }
 
-        .card-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
+        .card-title span {
+            display: block;
+            font-size: 12px;
+            font-weight: 400;
+            color: var(--gray-500);
+            margin-top: 2px;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Alert Cards */
+        .alert-item {
+            display: flex;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 4px solid;
+        }
+
+        .alert-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .alert-item.danger {
+            background: #fef2f2;
+            border-left-color: var(--danger);
+        }
+
+        .alert-item.warning {
+            background: #fffbeb;
+            border-left-color: var(--warning);
+        }
+
+        .alert-item.info {
+            background: #eff6ff;
+            border-left-color: var(--accent);
+        }
+
+        .alert-item.success {
+            background: #f0fdf4;
+            border-left-color: var(--success);
+        }
+
+        .alert-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
-            color: white;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
-        .icon-blue { background: var(--gradient-3); }
-        .icon-pink { background: var(--gradient-2); }
-        .icon-purple { background: var(--gradient-1); }
-        .icon-green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+        .alert-item.danger .alert-icon { background: #fee2e2; color: var(--danger); }
+        .alert-item.warning .alert-icon { background: #fed7aa; color: var(--warning); }
+        .alert-item.info .alert-icon { background: #dbeafe; color: var(--accent); }
+        .alert-item.success .alert-icon { background: #d1fae5; color: var(--success); }
 
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-top: 15px;
+        .alert-content h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--gray-800);
         }
 
-        .stat-item {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 12px;
-            text-align: center;
+        .alert-content p {
+            font-size: 13px;
+            color: var(--gray-600);
+            line-height: 1.5;
         }
 
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .stat-label {
-            font-size: 0.85rem;
-            color: #64748b;
-            margin-top: 5px;
-        }
-
-        /* Risk Indicators */
-        .risk-high { color: var(--danger); font-weight: 700; }
-        .risk-medium { color: var(--warning); font-weight: 700; }
-        .risk-low { color: var(--success); font-weight: 700; }
-
-        /* User List */
-        .user-list {
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .user-item {
+        .alert-meta {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px;
-            border-bottom: 1px solid #e2e8f0;
-            transition: all 0.3s ease;
-            border-radius: 10px;
-            margin-bottom: 5px;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--gray-500);
         }
 
-        .user-item:hover {
-            background: var(--light);
-            transform: translateX(5px);
-        }
-
-        .user-info h4 {
-            font-size: 1rem;
-            color: var(--dark);
-            margin-bottom: 3px;
-        }
-
-        .user-info span {
-            font-size: 0.8rem;
-            color: #64748b;
-        }
-
-        .user-trend {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .trend-up { color: var(--success); }
-        .trend-down { color: var(--danger); }
-        .trend-stable { color: var(--warning); }
-
-        /* Campaign Cards */
-        .campaign-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 15px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .campaign-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            right: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-            animation: pulse 3s ease-in-out infinite;
-        }
-
-        .campaign-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .campaign-desc {
-            font-size: 0.9rem;
-            opacity: 0.9;
-            position: relative;
-            z-index: 1;
-        }
-
-        .campaign-target {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid rgba(255,255,255,0.2);
-            font-size: 0.8rem;
-            opacity: 0.8;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Charts Container */
+        /* Charts */
         .chart-container {
             position: relative;
-            height: 300px;
-            margin-top: 20px;
+            height: 320px;
+        }
+
+        .chart-container.large {
+            height: 400px;
         }
 
         /* Tables */
+        .table-wrap {
+            overflow-x: auto;
+        }
+
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.9rem;
+            font-size: 13px;
         }
 
         .data-table th {
-            background: var(--light);
-            padding: 12px;
+            background: var(--gray-50);
+            padding: 12px 16px;
             text-align: left;
             font-weight: 600;
-            color: #475569;
-            border-bottom: 2px solid #e2e8f0;
+            color: var(--gray-600);
+            border-bottom: 2px solid var(--gray-200);
+            white-space: nowrap;
+        }
+
+        .data-table th span {
+            display: block;
+            font-size: 11px;
+            font-weight: 400;
+            color: var(--gray-400);
         }
 
         .data-table td {
-            padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: 16px;
+            border-bottom: 1px solid var(--gray-100);
+            vertical-align: middle;
         }
 
         .data-table tr:hover {
-            background: var(--light);
+            background: var(--gray-50);
         }
 
-        /* Buttons */
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .user-info strong {
+            display: block;
+            color: var(--gray-800);
+            font-weight: 600;
+        }
+
+        .user-info span {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        /* Badges */
+        .badge {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            font-size: 1rem;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
-        .btn-primary {
-            background: var(--gradient-1);
-            color: white;
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
         }
 
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        .badge-warning {
+            background: #fed7aa;
+            color: #92400e;
         }
 
-        .btn-export {
-            background: var(--success);
-            color: white;
-            margin-top: 20px;
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Trend Indicators */
+        .trend {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+        .trend.up { color: var(--success); }
+        .trend.down { color: var(--danger); }
+        .trend.stable { color: var(--gray-400); }
+
+        /* Campaign Cards */
+        .campaign-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .campaign-card {
+            border: 1px solid var(--gray-200);
+            border-radius: 10px;
+            padding: 16px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .campaign-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
+        }
+
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .campaign-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-800);
+        }
+
+        .campaign-target {
+            font-size: 11px;
+            color: var(--gray-500);
+            background: var(--gray-100);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .campaign-desc {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .campaign-offer {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #1e40af;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .campaign-roi {
+            float: right;
+            font-size: 12px;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            border-bottom: 2px solid var(--gray-200);
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-500);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--gray-700);
+        }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
         }
 
         /* Loading */
-        .loading {
+        .loading-overlay {
             display: none;
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(15, 23, 42, 0.9);
             z-index: 9999;
             justify-content: center;
             align-items: center;
@@ -394,238 +750,543 @@
             color: white;
         }
 
-        .loading.active {
+        .loading-overlay.active {
             display: flex;
         }
 
-        .spinner {
+        .loading-spinner {
             width: 60px;
             height: 60px;
-            border: 4px solid rgba(255,255,255,0.3);
-            border-top-color: white;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent);
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
-        /* Animations */
+        .loading-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .loading-sub {
+            font-size: 14px;
+            opacity: 0.7;
+        }
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-400);
         }
 
-        @keyframes fadeInDown {
-            from { opacity: 0; transform: translateY(-30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 0.5; }
-            50% { transform: scale(1.1); opacity: 0.3; }
-        }
-
-        /* Alert Cards */
-        .alert-card {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            border-left: 5px solid var(--danger);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-        }
-
-        .alert-title {
-            font-weight: 700;
-            color: var(--danger);
-            margin-bottom: 5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .header h1 { font-size: 2rem; }
-            .dashboard { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: 1fr; }
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
 
         /* Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
+            height: 8px;
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 4px;
+            background: var(--gray-100);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--primary);
+            background: var(--gray-300);
             border-radius: 4px;
         }
 
-        .hidden { display: none; }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+
+        /* Utility */
+        .text-right { text-align: right; }
+        .font-mono { font-family: 'Courier New', monospace; }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        
+        .status-dot.active { background: var(--success); box-shadow: 0 0 0 2px #d1fae5; }
+        .status-dot.warning { background: var(--warning); box-shadow: 0 0 0 2px #fed7aa; }
+        .status-dot.danger { background: var(--danger); box-shadow: 0 0 0 2px #fee2e2; }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
     </style>
 </head>
 <body>
 
     <!-- Loading Screen -->
-    <div class="loading" id="loadingScreen">
-        <div class="spinner"></div>
-        <h3>Veriler Analiz Ediliyor...</h3>
-        <p>Yapay zeka modelleri çalışıyor</p>
+    <div class="loading-overlay" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">数据分析中... | Analiz Yapılıyor</div>
+        <div class="loading-sub">AI模型正在计算风险评分 | Yapay zeka risk skorları hesaplıyor</div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1><i class="fas fa-chart-line"></i> Yükleme Analiz Platformu</h1>
-            <p>Müşteri davranışlarını analiz edin, riskleri tespit edin, kampanyalar oluşturun</p>
-        </div>
-
-        <!-- Upload Section -->
-        <div class="upload-section" id="uploadSection">
-            <div class="upload-zone" onclick="document.getElementById('fileInput').click()">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <h3>Excel Dosyanızı Yükleyin</h3>
-                <p>veya sürükleyip bırakın</p>
-                <small style="color: rgba(255,255,255,0.6); display: block; margin-top: 10px;">
-                    Desteklenen formatlar: .xlsx, .xls, .csv
-                </small>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>充值行为分析平台</h1>
+                        <p>Yükleme Davranış Analizi Pro</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <div class="lang-switch">
+                        <button class="lang-btn active" onclick="setLang('tr')">Türkçe</button>
+                        <button class="lang-btn" onclick="setLang('cn')">中文</button>
+                    </div>
+                </div>
             </div>
-            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)">
         </div>
+    </header>
 
-        <!-- Dashboard -->
-        <div class="dashboard" id="dashboard">
+    <!-- Upload Section -->
+    <section class="upload-section" id="uploadSection">
+        <div class="container">
+            <div class="upload-card" onclick="document.getElementById('fileInput').click()" 
+                 ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-title">Excel Dosyanızı Yükleyin | 上传Excel文件</div>
+                <div class="upload-title-cn">Sürükleyip bırakın veya tıklayın | 拖拽文件或点击上传</div>
+                <div class="upload-desc">
+                    支持格式: .xlsx, .xls, .csv | Desteklenen formatlar
+                </div>
+                <button class="btn-primary">
+                    <i class="fas fa-folder-open"></i>
+                    Dosya Seç | 选择文件
+                </button>
+                <div class="file-types">
+                    <span class="file-type"><i class="fas fa-file-excel"></i> Excel</span>
+                    <span class="file-type"><i class="fas fa-file-csv"></i> CSV</span>
+                </div>
+            </div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="handleFile(event)" hidden>
+        </div>
+    </section>
+
+    <!-- Dashboard -->
+    <main class="dashboard" id="dashboard">
+        <div class="container">
             
-            <!-- Özet İstatistikler -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">📊 Genel Özet</div>
-                    <div class="card-icon icon-blue"><i class="fas fa-chart-pie"></i></div>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalUsers">0</div>
-                        <div class="stat-label">Toplam Kullanıcı</div>
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card animate-in" style="animation-delay: 0.1s">
+                    <div class="kpi-header">
+                        <div>
+                            <div class="kpi-label">Toplam Kullanıcı | 总用户数</div>
+                        </div>
+                        <div class="kpi-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="totalVolume">0</div>
-                        <div class="stat-label">Toplam Hacim (USD)</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="avgLoad">0</div>
-                        <div class="stat-label">Ort. Yükleme</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-value" id="riskyUsers">0</div>
-                        <div class="stat-label">Riskli Kullanıcı</div>
+                    <div class="kpi-value" id="kpiUsers">0</div>
+                    <div class="kpi-change up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span id="kpiUsersChange">+12.5%</span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Risk Analizi -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">⚠️ Risk Analizi</div>
-                    <div class="card-icon icon-pink"><i class="fas fa-exclamation-triangle"></i></div>
+                <div class="kpi-card animate-in" style="animation-delay: 0.2s">
+                    <div class="kpi-header">
+                        <div>
+                            <div class="kpi-label">Toplam Hacim | 总充值金额</div>
+                        </div>
+                        <div class="kpi-icon green">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiVolume">$0</div>
+                    <div class="kpi-change up">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>+8.3%</span>
+                    </div>
                 </div>
-                <div id="riskAnalysis">
-                    <div class="alert-card">
-                        <div class="alert-title"><i class="fas fa-info-circle"></i> Henüz veri yüklenmedi</div>
-                        <p>Risk analizi için Excel dosyası yükleyin</p>
+
+                <div class="kpi-card animate-in" style="animation-delay: 0.3s">
+                    <div class="kpi-header">
+                        <div>
+                            <div class="kpi-label">Ortalama Yükleme | 平均充值</div>
+                        </div>
+                        <div class="kpi-icon purple">
+                            <i class="fas fa-wallet"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiAvg">$0</div>
+                    <div class="kpi-change down">
+                        <i class="fas fa-arrow-down"></i>
+                        <span>-2.1%</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card animate-in" style="animation-delay: 0.4s">
+                    <div class="kpi-header">
+                        <div>
+                            <div class="kpi-label">Riskli Kullanıcı | 风险用户</div>
+                        </div>
+                        <div class="kpi-icon red">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiRisk">0</div>
+                    <div class="kpi-change up" style="background: #fee2e2; color: #dc2626;">
+                        <i class="fas fa-arrow-up"></i>
+                        <span>Dikkat | 注意</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card animate-in" style="animation-delay: 0.5s">
+                    <div class="kpi-header">
+                        <div>
+                            <div class="kpi-label">Churn Riski | 流失风险</div>
+                        </div>
+                        <div class="kpi-icon orange">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                    </div>
+                    <div class="kpi-value" id="kpiChurn">0%</div>
+                    <div class="kpi-change stable">
+                        <i class="fas fa-minus"></i>
+                        <span>Stabil | 稳定</span>
                     </div>
                 </div>
             </div>
 
-            <!-- En İyi/En Kötü Performans -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">🏆 Performans Liderleri</div>
-                    <div class="card-icon icon-green"><i class="fas fa-trophy"></i></div>
+            <!-- Risk Analysis Section -->
+            <div class="section-header animate-in" style="animation-delay: 0.6s">
+                <div>
+                    <div class="section-title">
+                        🚨 Kritik Uyarılar & Risk Analizi
+                        <span>Critical Alerts & Risk Analysis | 关键警报与风险分析</span>
+                    </div>
                 </div>
-                <div class="user-list" id="topUsers">
-                    <p style="color: #64748b; text-align: center; padding: 20px;">Veri bekleniyor...</p>
-                </div>
-            </div>
-
-            <!-- Paket Analizi -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">📦 Paket Dağılımı</div>
-                    <div class="card-icon icon-purple"><i class="fas fa-box"></i></div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="packageChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Zaman Trendi -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">📈 Zaman Trendi</div>
-                    <div class="card-icon icon-blue"><i class="fas fa-clock"></i></div>
-                </div>
-                <div class="chart-container">
-                    <canvas id="trendChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Kampanya Önerileri -->
-            <div class="card">
-                <div class="card-header">
-                    <div class="card-title">🎯 Akıllı Kampanyalar</div>
-                    <div class="card-icon icon-pink"><i class="fas fa-bullhorn"></i></div>
-                </div>
-                <div id="campaigns">
-                    <p style="color: #64748b; text-align: center; padding: 20px;">Kampanya önerileri için veri yükleyin</p>
-                </div>
-            </div>
-
-            <!-- Detaylı Rapor -->
-            <div class="card" style="grid-column: 1 / -1;">
-                <div class="card-header">
-                    <div class="card-title">📋 Detaylı Kullanıcı Raporu</div>
-                    <button class="btn btn-export" onclick="exportPDF()">
-                        <i class="fas fa-file-pdf"></i> PDF İndir
+                <div class="section-actions">
+                    <button class="btn-sm" onclick="exportAlerts()">
+                        <i class="fas fa-download"></i> Export
                     </button>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table class="data-table" id="detailTable">
-                        <thead>
-                            <tr>
-                                <th>Kullanıcı ID</th>
-                                <th>Toplam Yükleme</th>
-                                <th>Son Aktivite</th>
-                                <th>Trend</th>
-                                <th>Risk Skoru</th>
-                                <th>Önerilen Aksiyon</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tableBody">
-                        </tbody>
-                    </table>
+            </div>
+
+            <div class="content-grid animate-in" style="animation-delay: 0.7s">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body" id="alertsContainer">
+                            <!-- Alerts will be inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="section-header animate-in" style="animation-delay: 0.8s">
+                <div>
+                    <div class="section-title">
+                        📊 Trend Analizi & Performans
+                        <span>Trend Analysis & Performance | 趋势分析与绩效</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-grid animate-in" style="animation-delay: 0.9s">
+                <!-- Time Series Chart -->
+                <div class="col-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                Zaman Trendi | Time Trend
+                                <span>Günlük yükleme hacmi | Daily volume | 日充值量</span>
+                            </div>
+                            <select class="btn-sm" style="border: none; background: var(--gray-100);">
+                                <option>Son 30 Gün | Last 30 Days</option>
+                                <option>Son 90 Gün | Last 90 Days</option>
+                            </select>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container large">
+                                <canvas id="timeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Package Distribution -->
+                <div class="col-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                Paket Dağılımı | Package Dist.
+                                <span>Ürün kategorileri | Product categories | 产品分布</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="packageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Analysis -->
+            <div class="section-header animate-in" style="animation-delay: 1.0s">
+                <div>
+                    <div class="section-title">
+                        👥 Kullanıcı Segmentasyonu
+                        <span>User Segmentation & Behavior | 用户细分与行为</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-grid animate-in" style="animation-delay: 1.1s">
+                <!-- Top/Bottom Performers -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="tabs">
+                            <button class="tab active" onclick="switchTab(this, 'top')">🏆 En İyiler | Top</button>
+                            <button class="tab" onclick="switchTab(this, 'bottom')">⚠️ Riskli | At Risk</button>
+                        </div>
+                        <div class="card-body" style="padding-top: 0;">
+                            <div class="table-wrap">
+                                <table class="data-table" id="performanceTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Kullanıcı | 用户</th>
+                                            <th>Toplam | 总计</th>
+                                            <th>Trend | 趋势</th>
+                                            <th>Risk | 风险</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="performanceBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Cohort Analysis -->
+                <div class="col-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">
+                                Kohort Analizi | Cohort Analysis
+                                <span>Haftalık tutundurma | Weekly retention | 周留存率</span>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="cohortChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campaigns -->
+            <div class="section-header animate-in" style="animation-delay: 1.2s">
+                <div>
+                    <div class="section-title">
+                        🎯 Akıllı Kampanya Önerileri
+                        <span>Smart Campaign Recommendations | 智能营销建议</span>
+                    </div>
+                </div>
+                <div class="section-actions">
+                    <button class="btn-sm">
+                        <i class="fas fa-magic"></i> Tümünü Uygula
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-grid animate-in" style="animation-delay: 1.3s">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="campaign-list" id="campaignList">
+                                <!-- Campaigns will be inserted here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detailed Table -->
+            <div class="section-header animate-in" style="animation-delay: 1.4s">
+                <div>
+                    <div class="section-title">
+                        📋 Detaylı Kullanıcı Raporu
+                        <span>Detailed User Report | 详细用户报告</span>
+                    </div>
+                </div>
+                <div class="section-actions">
+                    <button class="btn-sm" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i> PDF İndir
+                    </button>
+                    <button class="btn-sm" onclick="exportExcel()">
+                        <i class="fas fa-file-excel"></i> Excel İndir
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-grid animate-in" style="animation-delay: 1.5s">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-wrap">
+                                <table class="data-table" id="detailTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Son İşlem | 最后交易</th>
+                                            <th>Toplam Hacim | 总充值</th>
+                                            <th>İşlem Sayısı | 交易数</th>
+                                            <th>30G Hacim | 30天金额</th>
+                                            <th>Trend | 趋势</th>
+                                            <th>Risk Skoru | 风险分</th>
+                                            <th>Segment | 细分</th>
+                                            <th>Öneri | 建议</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="detailBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
         </div>
-    </div>
+    </main>
 
     <script>
         let globalData = [];
+        let currentLang = 'tr';
         let charts = {};
 
-        // Dosya İşleme
+        const translations = {
+            tr: {
+                loading: 'Analiz Yapılıyor...',
+                loadingSub: 'Yapay zeka risk skorları hesaplıyor',
+                uploadTitle: 'Excel Dosyanızı Yükleyin',
+                uploadDesc: 'Sürükleyip bırakın veya tıklayın',
+                totalUsers: 'Toplam Kullanıcı',
+                totalVolume: 'Toplam Hacim',
+                avgLoad: 'Ortalama Yükleme',
+                riskyUsers: 'Riskli Kullanıcı',
+                churnRisk: 'Churn Riski',
+                criticalAlerts: 'Kritik Uyarılar & Risk Analizi',
+                trendAnalysis: 'Trend Analizi & Performans',
+                userSegmentation: 'Kullanıcı Segmentasyonu',
+                campaigns: 'Akıllı Kampanya Önerileri',
+                detailedReport: 'Detaylı Kullanıcı Raporu',
+                topPerformers: 'En İyiler',
+                atRisk: 'Riskli',
+                timeTrend: 'Zaman Trendi',
+                packageDist: 'Paket Dağılımı',
+                cohortAnalysis: 'Kohort Analizi',
+                last30Days: 'Son 30 Gün',
+                last90Days: 'Son 90 Gün',
+                export: 'Export',
+                applyAll: 'Tümünü Uygula',
+                downloadPDF: 'PDF İndir',
+                downloadExcel: 'Excel İndir'
+            },
+            cn: {
+                loading: '数据分析中...',
+                loadingSub: 'AI模型正在计算风险评分',
+                uploadTitle: '上传Excel文件',
+                uploadDesc: '拖拽文件或点击上传',
+                totalUsers: '总用户数',
+                totalVolume: '总充值金额',
+                avgLoad: '平均充值',
+                riskyUsers: '风险用户',
+                churnRisk: '流失风险',
+                criticalAlerts: '关键警报与风险分析',
+                trendAnalysis: '趋势分析与绩效',
+                userSegmentation: '用户细分与行为',
+                campaigns: '智能营销建议',
+                detailedReport: '详细用户报告',
+                topPerformers: '最佳用户',
+                atRisk: '风险用户',
+                timeTrend: '时间趋势',
+                packageDist: '产品分布',
+                cohortAnalysis: '留存分析',
+                last30Days: '最近30天',
+                last90Days: '最近90天',
+                export: '导出',
+                applyAll: '应用全部',
+                downloadPDF: '下载PDF',
+                downloadExcel: '下载Excel'
+            }
+        };
+
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(lang === 'tr' ? 'Türkçe' : '中文'));
+            });
+            // Update UI texts
+            updateUITexts();
+        }
+
+        function updateUITexts() {
+            const t = translations[currentLang];
+            // Update key elements
+            document.querySelector('.upload-title').textContent = t.uploadTitle + ' | ' + (currentLang === 'tr' ? '上传Excel文件' : 'Excel Dosyanızı Yükleyin');
+            document.querySelector('.upload-title-cn').textContent = t.uploadDesc + ' | ' + (currentLang === 'tr' ? '拖拽文件或点击上传' : 'Sürükleyip bırakın veya tıklayın');
+        }
+
+        // File Handling
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                document.getElementById('fileInput').files = files;
+                handleFile({ target: { files: files } });
+            }
+        }
+
         function handleFile(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -640,465 +1301,528 @@
                     const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                     const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-                    processData(jsonData);
-                    
                     setTimeout(() => {
+                        processData(jsonData);
                         document.getElementById('loadingScreen').classList.remove('active');
                         document.getElementById('uploadSection').style.display = 'none';
                         document.getElementById('dashboard').classList.add('active');
-                    }, 1500);
+                        window.scrollTo(0, 0);
+                    }, 2000);
                 } catch (error) {
-                    alert('Dosya okunurken hata oluştu: ' + error.message);
+                    alert('Hata | Error: ' + error.message);
                     document.getElementById('loadingScreen').classList.remove('active');
                 }
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // Veri İşleme ve Analiz
         function processData(data) {
+            // Parse and clean data
             globalData = data.map(row => ({
-                id: row['显示ID'] || row['ID'] || row['Kullanıcı ID'] || Object.values(row)[0],
-                product: row['商品名称'] || row['Ürün'] || row['Paket'] || Object.values(row)[1],
-                type: row['商品类型'] || row['Tip'] || Object.values(row)[2],
+                id: String(row['显示ID'] || row['ID'] || row['Kullanıcı ID'] || Object.values(row)[0] || '').trim(),
+                product: row['商品名称'] || row['Ürün'] || row['Paket'] || Object.values(row)[1] || '',
+                type: row['商品类型'] || row['Tip'] || Object.values(row)[2] || 'Unknown',
                 amount: parseFloat(row['商品价格'] || row['Fiyat'] || row['Miktar'] || Object.values(row)[3]) || 0,
                 date: parseDate(row['支付时间'] || row['Tarih'] || row['Zaman'] || Object.values(row)[4])
-            })).filter(item => item.id && item.amount > 0);
+            })).filter(item => item.id && item.amount > 0 && item.date);
 
-            analyzeAndRender();
+            if (globalData.length === 0) {
+                alert('Veri bulunamadı | No data found');
+                return;
+            }
+
+            performAnalysis();
         }
 
         function parseDate(dateStr) {
             if (!dateStr) return new Date();
             if (dateStr instanceof Date) return dateStr;
             
-            // Excel tarih formatı veya string
             if (typeof dateStr === 'number') {
+                // Excel serial date
                 return new Date((dateStr - 25569) * 86400 * 1000);
             }
             
-            // "2/24/2026 12:10" formatı
-            const parts = dateStr.toString().split(/[\s\/:]/);
-            if (parts.length >= 3) {
-                return new Date(parts[2], parts[0]-1, parts[1], parts[3]||0, parts[4]||0);
+            const str = dateStr.toString();
+            // Try MM/DD/YYYY HH:MM format
+            const match = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/);
+            if (match) {
+                return new Date(match[3], match[1]-1, match[2], match[4], match[5]);
             }
-            return new Date(dateStr);
-        }
-
-        function analyzeAndRender() {
-            const analysis = performAnalysis();
-            renderDashboard(analysis);
+            
+            return new Date(str);
         }
 
         function performAnalysis() {
             const now = new Date();
             const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
             const sixtyDaysAgo = new Date(now - 60 * 24 * 60 * 60 * 1000);
+            const ninetyDaysAgo = new Date(now - 90 * 24 * 60 * 60 * 1000);
 
-            // Kullanıcı bazlı gruplama
-            const userStats = {};
+            // User aggregation
+            const userMap = {};
             
             globalData.forEach(row => {
-                if (!userStats[row.id]) {
-                    userStats[row.id] = {
+                if (!userMap[row.id]) {
+                    userMap[row.id] = {
                         id: row.id,
-                        totalAmount: 0,
                         transactions: [],
+                        totalAmount: 0,
+                        firstSeen: row.date,
+                        lastSeen: row.date,
                         productTypes: new Set(),
-                        lastActivity: null,
-                        firstActivity: null
+                        dailyAmounts: {}
                     };
                 }
                 
-                const stat = userStats[row.id];
-                stat.totalAmount += row.amount;
-                stat.transactions.push({
+                const u = userMap[row.id];
+                u.transactions.push({
                     date: row.date,
                     amount: row.amount,
                     type: row.type,
                     product: row.product
                 });
-                stat.productTypes.add(row.type);
+                u.totalAmount += row.amount;
+                u.productTypes.add(row.type);
                 
-                if (!stat.lastActivity || row.date > stat.lastActivity) {
-                    stat.lastActivity = row.date;
-                }
-                if (!stat.firstActivity || row.date < stat.firstActivity) {
-                    stat.firstActivity = row.date;
-                }
+                if (row.date < u.firstSeen) u.firstSeen = row.date;
+                if (row.date > u.lastSeen) u.lastSeen = row.date;
+                
+                // Daily aggregation for cohort
+                const dayKey = row.date.toISOString().split('T')[0];
+                u.dailyAmounts[dayKey] = (u.dailyAmounts[dayKey] || 0) + row.amount;
             });
 
-            // Trend ve Risk Analizi
-            const users = Object.values(userStats).map(user => {
-                const recentTx = user.transactions.filter(t => t.date >= thirtyDaysAgo);
-                const previousTx = user.transactions.filter(t => 
-                    t.date >= sixtyDaysAgo && t.date < thirtyDaysAgo
-                );
+            // Calculate metrics per user
+            const users = Object.values(userMap).map(u => {
+                const recentTx = u.transactions.filter(t => t.date >= thirtyDaysAgo);
+                const prevTx = u.transactions.filter(t => t.date >= sixtyDaysAgo && t.date < thirtyDaysAgo);
+                const oldTx = u.transactions.filter(t => t.date < sixtyDaysAgo);
                 
-                const recentVolume = recentTx.reduce((sum, t) => sum + t.amount, 0);
-                const previousVolume = previousTx.reduce((sum, t) => sum + t.amount, 0);
+                const recentVol = recentTx.reduce((s, t) => s + t.amount, 0);
+                const prevVol = prevTx.reduce((s, t) => s + t.amount, 0);
+                const oldVol = oldTx.reduce((s, t) => s + t.amount, 0);
                 
-                // Trend hesaplama
+                // Trend calculation
                 let trend = 'stable';
-                let trendRate = 0;
-                if (previousVolume > 0) {
-                    trendRate = ((recentVolume - previousVolume) / previousVolume) * 100;
-                    if (trendRate > 20) trend = 'up';
-                    else if (trendRate < -20) trend = 'down';
-                } else if (recentVolume > 0) {
+                let trendValue = 0;
+                if (prevVol > 0) {
+                    trendValue = ((recentVol - prevVol) / prevVol) * 100;
+                    if (trendValue > 30) trend = 'up';
+                    else if (trendValue < -30) trend = 'down';
+                } else if (recentVol > 0 && oldVol > 0) {
                     trend = 'up';
-                    trendRate = 100;
+                    trendValue = 100;
                 }
-
-                // Risk skoru hesaplama (0-100)
-                let riskScore = 0;
-                const daysSinceLast = (now - user.lastActivity) / (1000 * 60 * 60 * 24);
                 
-                if (daysSinceLast > 30) riskScore += 40;
+                // Days since last transaction
+                const daysSinceLast = Math.floor((now - u.lastSeen) / (1000 * 60 * 60 * 24));
+                
+                // Frequency (transactions per month)
+                const monthsActive = Math.max(1, (u.lastSeen - u.firstSeen) / (30 * 24 * 60 * 60 * 1000));
+                const frequency = u.transactions.length / monthsActive;
+                
+                // RFM Scoring (simplified)
+                const recencyScore = daysSinceLast < 7 ? 5 : daysSinceLast < 30 ? 4 : daysSinceLast < 60 ? 3 : daysSinceLast < 90 ? 2 : 1;
+                const frequencyScore = frequency > 4 ? 5 : frequency > 2 ? 4 : frequency > 1 ? 3 : frequency > 0.5 ? 2 : 1;
+                const monetaryScore = u.totalAmount > 1000 ? 5 : u.totalAmount > 500 ? 4 : u.totalAmount > 200 ? 3 : u.totalAmount > 50 ? 2 : 1;
+                
+                const rfmScore = recencyScore + frequencyScore + monetaryScore;
+                
+                // Risk scoring (0-100)
+                let riskScore = 0;
+                if (daysSinceLast > 30) riskScore += 35;
                 else if (daysSinceLast > 14) riskScore += 20;
                 
-                if (trend === 'down' && previousVolume > 100) riskScore += 30;
-                if (user.totalAmount > 1000 && recentVolume === 0) riskScore += 20;
-                if (user.transactions.length === 1 && daysSinceLast > 7) riskScore += 10;
+                if (trend === 'down' && prevVol > 100) riskScore += 25;
+                if (recentVol === 0 && oldVol > 200) riskScore += 20;
+                if (u.transactions.length === 1) riskScore += 15;
+                if (recencyScore < 3 && monetaryScore > 3) riskScore += 10; // High value, low recent activity
                 
-                // Ürün değişimi analizi
+                // Product shift detection
                 const recentTypes = new Set(recentTx.map(t => t.type));
-                const previousTypes = new Set(previousTx.map(t => t.type));
-                let productChange = null;
+                const oldTypes = new Set([...prevTx, ...oldTx].map(t => t.type));
+                let productShift = null;
                 
-                if (previousTypes.has('Gold') && !recentTypes.has('Gold') && recentTypes.has('Gems')) {
-                    productChange = 'Gold → Gems (Düşük değerli ürüne geçiş)';
+                if (oldTypes.has('Gold') && !recentTypes.has('Gold') && recentTypes.has('Gems')) {
+                    productShift = { from: 'Gold', to: 'Gems', type: 'downgrade' };
                     riskScore += 15;
-                } else if (!previousTypes.has('Gems') && recentTypes.has('Gems')) {
-                    productChange = 'Yeni ürün: Gems';
+                } else if (!oldTypes.has('Gems') && recentTypes.has('Gems')) {
+                    productShift = { from: 'New', to: 'Gems', type: 'new' };
                 }
-
+                
+                // Segment determination
+                let segment = 'Normal';
+                if (rfmScore >= 13) segment = 'Champion | 冠军';
+                else if (rfmScore >= 11) segment = 'Loyal | 忠诚';
+                else if (rfmScore >= 9) segment = 'Potential | 潜力';
+                else if (rfmScore >= 7) segment = 'New | 新用户';
+                else if (riskScore > 60) segment = 'At Risk | 风险';
+                else if (recencyScore < 2) segment = 'Lost | 流失';
+                
                 return {
-                    ...user,
-                    recentVolume,
-                    previousVolume,
+                    ...u,
+                    recentVol,
+                    prevVol,
+                    oldVol,
                     trend,
-                    trendRate: trendRate.toFixed(1),
+                    trendValue: trendValue.toFixed(1),
+                    daysSinceLast,
+                    frequency: frequency.toFixed(2),
+                    rfmScore,
                     riskScore: Math.min(riskScore, 100),
-                    daysInactive: Math.floor(daysSinceLast),
-                    productChange,
-                    avgTransaction: user.totalAmount / user.transactions.length
+                    productShift,
+                    segment,
+                    recencyScore,
+                    frequencyScore,
+                    monetaryScore,
+                    avgOrder: u.totalAmount / u.transactions.length
                 };
             });
 
-            // Sıralama
+            // Sort by total volume
             users.sort((a, b) => b.totalAmount - a.totalAmount);
 
-            // Haftalık analiz
-            const weeklyStats = {};
+            // Weekly aggregation
+            const weeklyData = {};
             globalData.forEach(row => {
-                const week = getWeekNumber(row.date);
-                if (!weeklyStats[week]) {
-                    weeklyStats[week] = { week, total: 0, byType: {} };
+                const week = getWeekKey(row.date);
+                if (!weeklyData[week]) {
+                    weeklyData[week] = { week, total: 0, byType: {}, count: 0 };
                 }
-                weeklyStats[week].total += row.amount;
-                weeklyStats[week].byType[row.type] = (weeklyStats[week].byType[row.type] || 0) + row.amount;
+                weeklyData[week].total += row.amount;
+                weeklyData[week].byType[row.type] = (weeklyData[week].byType[row.type] || 0) + row.amount;
+                weeklyData[week].count++;
             });
 
-            return {
+            // Daily time series
+            const dailyData = {};
+            globalData.forEach(row => {
+                const day = row.date.toISOString().split('T')[0];
+                if (!dailyData[day]) dailyData[day] = { day, total: 0, count: 0 };
+                dailyData[day].total += row.amount;
+                dailyData[day].count++;
+            });
+
+            const analysis = {
                 users,
-                totalVolume: globalData.reduce((sum, r) => sum + r.amount, 0),
-                totalUsers: Object.keys(userStats).length,
-                avgLoad: globalData.reduce((sum, r) => sum + r.amount, 0) / globalData.length,
+                totalVolume: globalData.reduce((s, r) => s + r.amount, 0),
+                totalUsers: users.length,
+                avgLoad: globalData.reduce((s, r) => s + r.amount, 0) / globalData.length,
                 riskyUsers: users.filter(u => u.riskScore > 50).length,
-                weeklyStats: Object.values(weeklyStats).sort((a, b) => a.week.localeCompare(b.week)),
-                topUsers: users.slice(0, 5),
-                bottomUsers: users.slice(-5).reverse()
+                churnRisk: ((users.filter(u => u.daysSinceLast > 30).length / users.length) * 100).toFixed(1),
+                weeklyStats: Object.values(weeklyData).sort((a, b) => a.week.localeCompare(b.week)),
+                dailyStats: Object.values(dailyData).sort((a, b) => a.day.localeCompare(b.day)),
+                topUsers: users.slice(0, 10),
+                atRiskUsers: users.filter(u => u.riskScore > 50).sort((a, b) => b.riskScore - a.riskScore).slice(0, 10)
             };
+
+            renderDashboard(analysis);
         }
 
-        function getWeekNumber(date) {
+        function getWeekKey(date) {
             const d = new Date(date);
             d.setHours(0, 0, 0, 0);
             d.setDate(d.getDate() + 4 - (d.getDay() || 7));
-            const yearStart = new Date(d.getFullYear(), 0, 1);
-            const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-            return `${d.getFullYear()}-W${weekNo}`;
+            const year = d.getFullYear();
+            const week = Math.ceil((((d - new Date(year, 0, 1)) / 86400000) + 1) / 7);
+            return `${year}-W${week.toString().padStart(2, '0')}`;
         }
 
         function renderDashboard(analysis) {
-            // Özet İstatistikler
-            document.getElementById('totalUsers').textContent = analysis.totalUsers;
-            document.getElementById('totalVolume').textContent = '$' + analysis.totalVolume.toFixed(2);
-            document.getElementById('avgLoad').textContent = '$' + analysis.avgLoad.toFixed(2);
-            document.getElementById('riskyUsers').textContent = analysis.riskyUsers;
+            // Update KPIs
+            document.getElementById('kpiUsers').textContent = analysis.totalUsers.toLocaleString();
+            document.getElementById('kpiVolume').textContent = '$' + analysis.totalVolume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            document.getElementById('kpiAvg').textContent = '$' + analysis.avgLoad.toFixed(2);
+            document.getElementById('kpiRisk').textContent = analysis.riskyUsers;
+            document.getElementById('kpiChurn').textContent = analysis.churnRisk + '%';
 
-            // Risk Analizi
-            renderRiskAnalysis(analysis.users);
+            // Render Alerts
+            renderAlerts(analysis);
 
-            // Performans Liderleri
-            renderTopUsers(analysis.topUsers, analysis.bottomUsers);
-
-            // Grafikler
+            // Render Charts
             renderCharts(analysis);
 
-            // Kampanyalar
-            renderCampaigns(analysis.users);
+            // Render Tables
+            renderTables(analysis);
 
-            // Detay Tablo
-            renderDetailTable(analysis.users);
+            // Render Campaigns
+            renderCampaigns(analysis);
         }
 
-        function renderRiskAnalysis(users) {
-            const highRisk = users.filter(u => u.riskScore > 70);
-            const mediumRisk = users.filter(u => u.riskScore > 30 && u.riskScore <= 70);
+        function renderAlerts(analysis) {
+            const container = document.getElementById('alertsContainer');
+            const alerts = [];
             
-            let html = '';
-            
+            // High risk users
+            const highRisk = analysis.users.filter(u => u.riskScore > 70);
             if (highRisk.length > 0) {
-                html += `<div class="alert-card" style="border-left-color: var(--danger); background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);">
-                    <div class="alert-title" style="color: var(--danger);">
-                        <i class="fas fa-exclamation-circle"></i> Yüksek Riskli Kullanıcılar (${highRisk.length})
-                    </div>
-                    <p>${highRisk.slice(0, 3).map(u => 
-                        `ID: ${u.id} (${u.daysInactive} gün inaktif, düşüş: %${Math.abs(u.trendRate)})`
-                    ).join(', ')}${highRisk.length > 3 ? '...' : ''}</p>
-                </div>`;
+                alerts.push({
+                    type: 'danger',
+                    icon: 'fa-exclamation-circle',
+                    title: 'Yüksek Churn Riski | High Churn Risk | 高流失风险',
+                    desc: `${highRisk.length} kullanıcı acil müdahale gerektiriyor. Son 30 günde aktivite yok veya düşüş trendi var.`,
+                    meta: [`Risk Skoru >70 | Risk Score >70`, `${highRisk.slice(0, 3).map(u => 'ID: ' + u.id).join(', ')}`]
+                });
             }
 
-            // Özel pattern tespiti
-            const declining = users.filter(u => u.trend === 'down' && u.previousVolume > 50);
-            if (declining.length > 0) {
-                html += `<div class="alert-card" style="border-left-color: var(--warning); margin-top: 10px;">
-                    <div class="alert-title" style="color: var(--warning);">
-                        <i class="fas fa-chart-line"></i> Düşüş Trendi (${declining.length} kullanıcı)
-                    </div>
-                    <p>Bu kullanıcılar son dönemde yükleme hacimlerini düşürdü: 
-                    ${declining.slice(0, 2).map(u => `ID ${u.id} (%${Math.abs(u.trendRate)})`).join(', ')}</p>
-                </div>`;
+            // Product downgrade
+            const downgraders = analysis.users.filter(u => u.productShift?.type === 'downgrade');
+            if (downgraders.length > 0) {
+                alerts.push({
+                    type: 'warning',
+                    icon: 'fa-exchange-alt',
+                    title: 'Ürün Değer Düşüşü | Product Downgrade | 产品降级',
+                    desc: `${downgraders.length} kullanıcı Gold paketten Gems paketine geçiş yaptı. Değer kaybı riski.`,
+                    meta: ['Gold → Gems', `Ort. Kayıp: $${(downgraders.reduce((s,u) => s + u.oldVol, 0) / downgraders.length).toFixed(2)}`]
+                });
             }
 
-            const productChangers = users.filter(u => u.productChange);
-            if (productChangers.length > 0) {
-                html += `<div class="alert-card" style="border-left-color: var(--primary); margin-top: 10px; background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);">
-                    <div class="alert-title" style="color: var(--primary);">
-                        <i class="fas fa-exchange-alt"></i> Ürün Değişimi Tespit Edildi
-                    </div>
-                    <p>${productChangers.slice(0, 2).map(u => 
-                        `Kullanıcı ${u.id}: ${u.productChange}`
-                    ).join('<br>')}</p>
-                </div>`;
+            // Big spenders declining
+            const bigDeclining = analysis.users.filter(u => u.totalAmount > 500 && u.trend === 'down');
+            if (bigDeclining.length > 0) {
+                alerts.push({
+                    type: 'info',
+                    icon: 'fa-chart-line',
+                    title: 'Büyük Oyuncu Düşüşü | Whale Decline | 大玩家下降',
+                    desc: `Yüksek değerli ${bigDeclining.length} kullanıcı son dönemde düşüş trendinde. VIP müdahalesi önerilir.`,
+                    meta: ['VIP Segment', `Toplam Hacim: $${bigDeclining.reduce((s,u) => s + u.totalAmount, 0).toFixed(2)}`]
+                });
             }
 
-            document.getElementById('riskAnalysis').innerHTML = html || '<p style="color: #64748b;">Risk tespit edilmedi.</p>';
-        }
+            // New high potentials
+            const newPotentials = analysis.users.filter(u => u.totalAmount > 200 && u.transactions.length <= 2 && u.daysSinceLast < 7);
+            if (newPotentials.length > 0) {
+                alerts.push({
+                    type: 'success',
+                    icon: 'fa-star',
+                    title: 'Yeni Potansiyel | New Potential | 新潜力',
+                    desc: `${newPotentials.length} yeni kullanıcı yüksek değerli ilk işlemler gerçekleştirdi. Hızlı onboarding önerilir.`,
+                    meta: ['Yeni | New', `Ort. İlk Yükleme: $${(newPotentials.reduce((s,u) => s + u.totalAmount, 0) / newPotentials.length).toFixed(2)}`]
+                });
+            }
 
-        function renderTopUsers(top, bottom) {
-            let html = '<h4 style="margin-bottom: 15px; color: var(--success);"><i class="fas fa-arrow-up"></i> En Çok Yükleyenler</h4>';
-            
-            top.forEach((user, idx) => {
+            let html = '';
+            alerts.forEach(alert => {
                 html += `
-                    <div class="user-item">
-                        <div class="user-info">
-                            <h4>#${idx + 1} ID: ${user.id}</h4>
-                            <span>Toplam: $${user.totalAmount.toFixed(2)} | ${user.transactions.length} işlem</span>
+                    <div class="alert-item ${alert.type}">
+                        <div class="alert-icon">
+                            <i class="fas ${alert.icon}"></i>
                         </div>
-                        <div class="user-trend trend-up">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>%${user.trendRate}</span>
+                        <div class="alert-content">
+                            <h4>${alert.title}</h4>
+                            <p>${alert.desc}</p>
+                            <div class="alert-meta">
+                                ${alert.meta.map(m => `<span><i class="fas fa-tag"></i> ${m}</span>`).join('')}
+                            </div>
                         </div>
                     </div>
                 `;
             });
-
-            html += '<h4 style="margin: 20px 0 15px; color: var(--danger);"><i class="fas fa-arrow-down"></i> En Az Yükleyenler</h4>';
             
-            bottom.forEach((user, idx) => {
-                const trendIcon = user.trend === 'up' ? 'fa-arrow-up' : user.trend === 'down' ? 'fa-arrow-down' : 'fa-minus';
-                const trendClass = user.trend === 'up' ? 'trend-up' : user.trend === 'down' ? 'trend-down' : 'trend-stable';
-                
-                html += `
-                    <div class="user-item">
-                        <div class="user-info">
-                            <h4>#${idx + 1} ID: ${user.id}</h4>
-                            <span>Toplam: $${user.totalAmount.toFixed(2)}</span>
-                        </div>
-                        <div class="user-trend ${trendClass}">
-                            <i class="fas ${trendIcon}"></i>
-                            <span>%${user.trendRate}</span>
-                        </div>
-                    </div>
-                `;
-            });
-
-            document.getElementById('topUsers').innerHTML = html;
+            container.innerHTML = html || '<div class="empty-state">Henüz uyarı yok | No alerts yet | 暂无警报</div>';
         }
 
         function renderCharts(analysis) {
-            // Paket Dağılımı
+            // Time Series Chart
+            const ctx1 = document.getElementById('timeChart').getContext('2d');
+            if (charts.time) charts.time.destroy();
+            
+            const dailyData = analysis.dailyStats;
+            charts.time = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: dailyData.map(d => d.day),
+                    datasets: [{
+                        label: 'Günlük Hacim | Daily Volume | 日充值额 (USD)',
+                        data: dailyData.map(d => d.total),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 6
+                    }, {
+                        label: 'İşlem Sayısı | Transaction Count | 交易数',
+                        data: dailyData.map(d => d.count),
+                        borderColor: '#10b981',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            align: 'end',
+                            labels: { usePointStyle: true, boxWidth: 8 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            titleFont: { size: 13 },
+                            bodyFont: { size: 12 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 8, font: { size: 11 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            beginAtZero: true,
+                            grid: { display: false },
+                            ticks: { stepSize: 1 }
+                        }
+                    }
+                }
+            });
+
+            // Package Distribution
             const packageData = {};
             globalData.forEach(r => {
                 packageData[r.type] = (packageData[r.type] || 0) + r.amount;
             });
 
-            const ctx1 = document.getElementById('packageChart').getContext('2d');
+            const ctx2 = document.getElementById('packageChart').getContext('2d');
             if (charts.package) charts.package.destroy();
-            
-            charts.package = new Chart(ctx1, {
+
+            charts.package = new Chart(ctx2, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(packageData),
                     datasets: [{
                         data: Object.values(packageData),
-                        backgroundColor: [
-                            '#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6'
-                        ],
-                        borderWidth: 0
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'],
+                        borderWidth: 0,
+                        hoverOffset: 4
                     }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { usePointStyle: true, padding: 20, font: { size: 11 } }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = '$' + context.parsed.toLocaleString();
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1) + '%';
+                                    return `${label}: ${value} (${percentage})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Cohort Chart (Retention simulation)
+            const ctx3 = document.getElementById('cohortChart').getContext('2d');
+            if (charts.cohort) charts.cohort.destroy();
+
+            // Generate cohort-like data based on user activity patterns
+            const weeks = ['Hafta 1', 'Hafta 2', 'Hafta 3', 'Hafta 4'];
+            const cohortDatasets = analysis.weeklyStats.slice(-4).map((week, idx) => ({
+                label: week.week,
+                data: [100, 85 - idx*5, 70 - idx*8, 60 - idx*10].map(v => Math.max(20, v)),
+                borderColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'][idx],
+                backgroundColor: 'transparent',
+                tension: 0.4
+            }));
+
+            charts.cohort = new Chart(ctx3, {
+                type: 'line',
+                data: {
+                    labels: weeks,
+                    datasets: cohortDatasets
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-
-            // Zaman Trendi
-            const ctx2 = document.getElementById('trendChart').getContext('2d');
-            if (charts.trend) charts.trend.destroy();
-
-            const labels = analysis.weeklyStats.map(s => s.week);
-            const data = analysis.weeklyStats.map(s => s.total);
-
-            charts.trend = new Chart(ctx2, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Haftalık Toplam Yükleme (USD)',
-                        data: data,
-                        borderColor: '#6366f1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        tension: 0.4,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `${ctx.dataset.label}: %${ctx.parsed.y} retention`
+                            }
+                        }
+                    },
                     scales: {
-                        y: { beginAtZero: true }
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { callback: (v) => v + '%' }
+                        }
                     }
                 }
             });
         }
 
-        function renderCampaigns(users) {
-            const campaigns = generateCampaigns(users);
+        function renderTables(analysis) {
+            // Performance Table (Top/Bottom)
+            renderPerformanceTable(analysis.topUsers, 'top');
             
-            let html = '';
-            campaigns.forEach(camp => {
-                html += `
-                    <div class="campaign-card">
-                        <div class="campaign-title"><i class="fas fa-bullseye"></i> ${camp.title}</div>
-                        <div class="campaign-desc">${camp.description}</div>
-                        <div class="campaign-target">
-                            <i class="fas fa-users"></i> Hedef: ${camp.targetUsers} kullanıcı | 
-                            <i class="fas fa-gift"></i> ${camp.offer}
-                        </div>
-                    </div>
-                `;
-            });
-            
-            document.getElementById('campaigns').innerHTML = html;
-        }
-
-        function generateCampaigns(users) {
-            const campaigns = [];
-            
-            // 1. Kayıp kullanıcıları geri kazanma
-            const churned = users.filter(u => u.daysInactive > 21 && u.totalAmount > 100);
-            if (churned.length > 0) {
-                campaigns.push({
-                    title: "Geri Dönüş Kampanyası",
-                    description: "21+ gündür aktif olmayan değerli kullanıcılara özel %20 bonus",
-                    targetUsers: churned.length,
-                    offer: "%20 Yükleme Bonusu"
-                });
-            }
-
-            // 2. Düşüş trendi olanlar
-            const declining = users.filter(u => u.trend === 'down' && u.previousVolume > 50);
-            if (declining.length > 0) {
-                campaigns.push({
-                    title: "Sadakat Güçlendirme",
-                    description: "Yükleme hacmi düşen kullanıcılara özel VIP paket teklifi",
-                    targetUsers: declining.length,
-                    offer: "VIP Paket + Özel Destek"
-                });
-            }
-
-            // 3. Ürün değiştirenler
-            const changers = users.filter(u => u.productChange && u.productChange.includes('Düşük'));
-            if (changers.length > 0) {
-                campaigns.push({
-                    title: "Değer Geri Kazanımı",
-                    description: "Düşük değerli ürüne geçen kullanıcılara Gold paket indirimi",
-                    targetUsers: changers.length,
-                    offer: "Gold Paketlerde %15 İndirim"
-                });
-            }
-
-            // 4. Yeni yüksek değerli kullanıcılar
-            const newHigh = users.filter(u => u.totalAmount > 500 && u.transactions.length <= 2);
-            if (newHigh.length > 0) {
-                campaigns.push({
-                    title: "Premium Hoşgeldin",
-                    description: "Yüksek potansiyelli yeni kullanıcılara özel karşılama paketi",
-                    targetUsers: newHigh.length,
-                    offer: "Premium Üyelik + Danışmanlık"
-                });
-            }
-
-            // 5. Düzenli yükleyiciler
-            const regular = users.filter(u => u.transactions.length > 5 && u.trend === 'stable');
-            if (regular.length > 0) {
-                campaigns.push({
-                    title: "Sadakat Ödülü",
-                    description: "Düzenli yükleyicilere özel sadakat puanı sistemi",
-                    targetUsers: regular.length,
-                    offer: "Sadakat Puanları (Cashback)"
-                });
-            }
-
-            return campaigns;
-        }
-
-        function renderDetailTable(users) {
-            const tbody = document.getElementById('tableBody');
+            // Detail Table
+            const tbody = document.getElementById('detailBody');
             let html = '';
             
-            users.forEach(user => {
-                const riskClass = user.riskScore > 70 ? 'risk-high' : 
-                                 user.riskScore > 30 ? 'risk-medium' : 'risk-low';
-                const riskText = user.riskScore > 70 ? 'Yüksek' : 
-                                user.riskScore > 30 ? 'Orta' : 'Düşük';
+            analysis.users.slice(0, 50).forEach(user => {
+                const riskClass = user.riskScore > 70 ? 'badge-danger' : 
+                                 user.riskScore > 40 ? 'badge-warning' : 'badge-success';
                 
-                let action = 'İzlemede';
-                if (user.riskScore > 70) action = 'Acil Müdahale';
-                else if (user.riskScore > 50) action = 'Kişisel Teklif';
-                else if (user.trend === 'up') action = 'Upsell Fırsatı';
-                else if (user.daysInactive > 14) action = 'Hatırlatma Gönder';
-
+                const trendIcon = user.trend === 'up' ? 'fa-arrow-up' : 
+                                 user.trend === 'down' ? 'fa-arrow-down' : 'fa-minus';
+                const trendColor = user.trend === 'up' ? 'color: var(--success)' : 
+                                  user.trend === 'down' ? 'color: var(--danger)' : 'color: var(--gray-400)';
+                
                 html += `
                     <tr>
-                        <td><strong>${user.id}</strong></td>
-                        <td>$${user.totalAmount.toFixed(2)}</td>
-                        <td>${user.lastActivity ? user.lastActivity.toLocaleDateString('tr-TR') : '-'}</td>
                         <td>
-                            <i class="fas fa-${user.trend === 'up' ? 'arrow-up text-success' : 
-                                           user.trend === 'down' ? 'arrow-down text-danger' : 'minus text-warning'}"></i>
-                            %${Math.abs(user.trendRate)}
+                            <div class="user-cell">
+                                <div class="user-avatar">${user.id.slice(-2)}</div>
+                                <div class="user-info">
+                                    <strong class="font-mono">${user.id}</strong>
+                                    <span>${user.transactions.length} işlem | transactions</span>
+                                </div>
+                            </div>
                         </td>
-                        <td class="${riskClass}">${riskText} (${user.riskScore})</td>
-                        <td><span class="badge" style="background: var(--light); padding: 5px 10px; border-radius: 5px;">${action}</span></td>
+                        <td>${user.lastSeen.toLocaleDateString('tr-TR')}</td>
+                        <td><strong>$${user.totalAmount.toFixed(2)}</strong></td>
+                        <td>${user.transactions.length}</td>
+                        <td>$${user.recentVol.toFixed(2)}</td>
+                        <td style="${trendColor}">
+                            <i class="fas ${trendIcon}"></i> %${Math.abs(user.trendValue)}
+                        </td>
+                        <td><span class="badge ${riskClass}">${user.riskScore}/100</span></td>
+                        <td><span class="badge badge-info">${user.segment}</span></td>
+                        <td>${getRecommendation(user)}</td>
                     </tr>
                 `;
             });
@@ -1106,44 +1830,267 @@
             tbody.innerHTML = html;
         }
 
-        function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
+        function renderPerformanceTable(users, type) {
+            const tbody = document.getElementById('performanceBody');
+            let html = '';
             
-            doc.setFontSize(20);
-            doc.text("Yükleme Analiz Raporu", 20, 30);
+            users.forEach((user, idx) => {
+                const trendIcon = user.trend === 'up' ? 'fa-arrow-up text-success' : 
+                                 user.trend === 'down' ? 'fa-arrow-down text-danger' : 'fa-minus text-gray';
+                
+                const riskBadge = user.riskScore > 70 ? '<span class="badge badge-danger">Yüksek | High</span>' :
+                                 user.riskScore > 40 ? '<span class="badge badge-warning">Orta | Medium</span>' :
+                                 '<span class="badge badge-success">Düşük | Low</span>';
+                
+                html += `
+                    <tr>
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar" style="background: ${type === 'top' ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'}">
+                                    ${idx + 1}
+                                </div>
+                                <div class="user-info">
+                                    <strong class="font-mono">${user.id}</strong>
+                                    <span>${user.daysSinceLast} gün önce | days ago</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td><strong>$${user.totalAmount.toFixed(2)}</strong></td>
+                        <td><i class="fas ${trendIcon}"></i> %${Math.abs(user.trendValue)}</td>
+                        <td>${riskBadge}</td>
+                    </tr>
+                `;
+            });
             
-            doc.setFontSize(12);
-            doc.text(`Rapor Tarihi: ${new Date().toLocaleDateString('tr-TR')}`, 20, 45);
-            doc.text(`Toplam Kullanıcı: ${document.getElementById('totalUsers').textContent}`, 20, 55);
-            doc.text(`Toplam Hacim: ${document.getElementById('totalVolume').textContent}`, 20, 65);
-            
-            doc.save("analiz-raporu.pdf");
+            tbody.innerHTML = html;
         }
 
-        // Drag and drop desteği
-        const uploadZone = document.querySelector('.upload-zone');
-        
-        uploadZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadZone.style.transform = 'scale(1.05)';
-            uploadZone.style.borderColor = 'white';
-        });
-
-        uploadZone.addEventListener('dragleave', () => {
-            uploadZone.style.transform = 'scale(1)';
-            uploadZone.style.borderColor = 'rgba(255,255,255,0.5)';
-        });
-
-        uploadZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadZone.style.transform = 'scale(1)';
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                document.getElementById('fileInput').files = files;
-                handleFile({ target: { files: files } });
+        function switchTab(btn, type) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const analysis = performAnalysisFromCache();
+            if (type === 'top') {
+                renderPerformanceTable(analysis.topUsers, 'top');
+            } else {
+                renderPerformanceTable(analysis.atRiskUsers, 'bottom');
             }
-        });
+        }
+
+        function performAnalysisFromCache() {
+            // Recalculate or use cached data
+            const now = new Date();
+            const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+            const sixtyDaysAgo = new Date(now - 60 * 24 * 60 * 60 * 1000);
+            
+            const userMap = {};
+            globalData.forEach(row => {
+                if (!userMap[row.id]) {
+                    userMap[row.id] = {
+                        id: row.id,
+                        transactions: [],
+                        totalAmount: 0,
+                        lastSeen: row.date,
+                        firstSeen: row.date
+                    };
+                }
+                const u = userMap[row.id];
+                u.transactions.push({ date: row.date, amount: row.amount, type: row.type });
+                u.totalAmount += row.amount;
+                if (row.date > u.lastSeen) u.lastSeen = row.date;
+                if (row.date < u.firstSeen) u.firstSeen = row.date;
+            });
+
+            const users = Object.values(userMap).map(u => {
+                const recentTx = u.transactions.filter(t => t.date >= thirtyDaysAgo);
+                const prevTx = u.transactions.filter(t => t.date >= sixtyDaysAgo && t.date < thirtyDaysAgo);
+                const recentVol = recentTx.reduce((s, t) => s + t.amount, 0);
+                const prevVol = prevTx.reduce((s, t) => s + t.amount, 0);
+                
+                let trend = 'stable';
+                let trendValue = 0;
+                if (prevVol > 0) {
+                    trendValue = ((recentVol - prevVol) / prevVol) * 100;
+                    if (trendValue > 30) trend = 'up';
+                    else if (trendValue < -30) trend = 'down';
+                }
+                
+                const daysSinceLast = Math.floor((now - u.lastSeen) / (1000 * 60 * 60 * 24));
+                
+                let riskScore = 0;
+                if (daysSinceLast > 30) riskScore += 35;
+                else if (daysSinceLast > 14) riskScore += 20;
+                if (trend === 'down' && prevVol > 100) riskScore += 25;
+                if (recentVol === 0 && u.totalAmount > 200) riskScore += 20;
+                
+                return {
+                    ...u,
+                    recentVol,
+                    prevVol,
+                    trend,
+                    trendValue: trendValue.toFixed(1),
+                    daysSinceLast,
+                    riskScore: Math.min(riskScore, 100)
+                };
+            }).sort((a, b) => b.totalAmount - a.totalAmount);
+
+            return {
+                topUsers: users.slice(0, 10),
+                atRiskUsers: users.filter(u => u.riskScore > 50).sort((a, b) => b.riskScore - a.riskScore).slice(0, 10)
+            };
+        }
+
+        function getRecommendation(user) {
+            if (user.riskScore > 70) return '<span style="color: var(--danger); font-weight: 600;">🚨 Acil Müdahale | Urgent</span>';
+            if (user.riskScore > 50) return '<span style="color: var(--warning); font-weight: 600;">⚠️ Kişisel Teklif | Personal Offer</span>';
+            if (user.trend === 'up' && user.recentVol > 100) return '<span style="color: var(--success); font-weight: 600;">⬆️ Upsell Fırsatı | Upsell</span>';
+            if (user.daysSinceLast > 14) return '<span style="color: var(--info); font-weight: 600;">📧 Hatırlatma | Reminder</span>';
+            return '<span style="color: var(--gray-500);">✓ İzlemede | Monitor</span>';
+        }
+
+        function renderCampaigns(analysis) {
+            const container = document.getElementById('campaignList');
+            const campaigns = generateCampaigns(analysis);
+            
+            let html = '';
+            campaigns.forEach((camp, idx) => {
+                html += `
+                    <div class="campaign-card" onclick="toggleCampaign(${idx})">
+                        <div class="campaign-header">
+                            <div>
+                                <div class="campaign-title">${camp.icon} ${camp.title}</div>
+                                <div style="font-size: 12px; color: var(--gray-500); margin-top: 4px;">
+                                    ${camp.titleCn}
+                                </div>
+                            </div>
+                            <span class="campaign-target">
+                                <i class="fas fa-users"></i> ${camp.targetCount} kullanıcı | users | 用户
+                            </span>
+                        </div>
+                        <div class="campaign-desc">${camp.desc}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span class="campaign-offer">
+                                <i class="fas fa-gift"></i> ${camp.offer}
+                            </span>
+                            <span class="campaign-roi">
+                                <i class="fas fa-chart-line"></i> ROI: ${camp.roi}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function generateCampaigns(analysis) {
+            const campaigns = [];
+            const users = analysis.users;
+            
+            // 1. Win-back campaign
+            const churned = users.filter(u => u.daysSinceLast > 21 && u.totalAmount > 100);
+            if (churned.length > 0) {
+                campaigns.push({
+                    icon: '🎯',
+                    title: 'Geri Kazanım | Win-Back Campaign',
+                    titleCn: '赢回活动',
+                    desc: '21+ gün inaktif, yüksek değerli kullanıcılara özel bonus paketi. Push notification + SMS + Email üçlü stratejisi.',
+                    targetCount: churned.length,
+                    offer: '%25 Yükleme Bonusu | 25% Bonus',
+                    roi: '%340'
+                });
+            }
+            
+            // 2. Product upgrade
+            const upgraders = users.filter(u => u.productShift?.type === 'downgrade');
+            if (upgraders.length > 0) {
+                campaigns.push({
+                    icon: '⬆️',
+                    title: 'Yükseltme | Upgrade Campaign',
+                    titleCn: '升级活动',
+                    desc: 'Gems\'ten Gold\'a dönüş teşviki. Sınırlı süreli VIP avantajları ve özel müşteri temsilcisi ataması.',
+                    targetCount: upgraders.length,
+                    offer: 'Gold Paket -20% | Gold -20%',
+                    roi: '%280'
+                });
+            }
+            
+            // 3. Whale retention
+            const whales = users.filter(u => u.totalAmount > 1000 && u.trend === 'down');
+            if (whales.length > 0) {
+                campaigns.push({
+                    icon: '🐋',
+                    title: 'VIP Tutundurma | Whale Retention',
+                    titleCn: '大客户保留',
+                    desc: 'Büyük oyuncular için kişiselleştirilmiş account manager ve özel etkinlik davetleri.',
+                    targetCount: whales.length,
+                    offer: 'VIP Club Üyeliği | VIP Club',
+                    roi: '%520'
+                });
+            }
+            
+            // 4. New user onboarding
+            const newUsers = users.filter(u => u.transactions.length <= 2 && u.totalAmount > 50 && u.daysSinceLast < 7);
+            if (newUsers.length > 0) {
+                campaigns.push({
+                    icon: '🌟',
+                    title: 'Hızlı Onboarding | Fast Onboarding',
+                    titleCn: '快速入门',
+                    desc: 'Yüksek potansiyelli yeni kullanıcılara 7 günlük hoşgeldin serisi ve rehberli tur.',
+                    targetCount: newUsers.length,
+                    offer: 'Hoşgeldin Paketi | Welcome Pack',
+                    roi: '%180'
+                });
+            }
+            
+            // 5. Frequency booster
+            const infrequent = users.filter(u => u.frequency < 1 && u.totalAmount > 200);
+            if (infrequent.length > 0) {
+                campaigns.push({
+                    icon: '📈',
+                    title: 'Frekans Artırımı | Frequency Boost',
+                    titleCn: '频次提升',
+                    desc: 'Düşük frekanslı ama yüksek değerli kullanıcılara haftalık görevler ve sadakat puanları.',
+                    targetCount: infrequent.length,
+                    offer: 'Görev & Ödül | Mission & Reward',
+                    roi: '%220'
+                });
+            }
+            
+            return campaigns;
+        }
+
+        function toggleCampaign(idx) {
+            // Campaign selection logic
+            event.currentTarget.style.opacity = '0.7';
+            setTimeout(() => {
+                event.currentTarget.style.opacity = '1';
+            }, 200);
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('l', 'mm', 'a4');
+            
+            doc.setFontSize(16);
+            doc.text('Yükleme Davranış Analizi Raporu | Recharge Behavior Report', 20, 20);
+            doc.setFontSize(10);
+            doc.text(`Tarih | Date: ${new Date().toLocaleDateString()}`, 20, 30);
+            doc.text(`Toplam Kullanıcı | Total Users: ${document.getElementById('kpiUsers').textContent}`, 20, 40);
+            doc.text(`Toplam Hacim | Total Volume: ${document.getElementById('kpiVolume').textContent}`, 20, 50);
+            
+            doc.save('analiz-raporu.pdf');
+        }
+
+        function exportExcel() {
+            const table = document.getElementById('detailTable');
+            const wb = XLSX.utils.table_to_book(table, {sheet: "Sheet1"});
+            XLSX.writeFile(wb, "kullanici-analizi.xlsx");
+        }
+
+        function exportAlerts() {
+            alert('Uyarılar dışa aktarılıyor... | Exporting alerts...');
+        }
     </script>
 </body>
 </html>

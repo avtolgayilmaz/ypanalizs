@@ -271,6 +271,7 @@ const fmtNum = n => Number(n||0).toLocaleString('tr-TR');
 const fmtMoney = n => '$' + Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2, maximumFractionDigits:2});
 const fmtDate = d => !d ? '-' : new Date(d).toLocaleDateString('tr-TR');
 const sum = arr => arr.reduce((a,b)=>a+Number(b||0),0);
+const byGroup = (arr, fn) => arr.reduce((m,x)=>((m[fn(x)] ||= []).push(x), m), {});
 function setStatus(text, isBad=false){ const s=el('statusText'); s.textContent=text; s.className='status'+(isBad?' bad':''); }
 function pick(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && String(row[k]).trim()!=='') return row[k]; } return null; }
 function parseDate(v){
@@ -331,116 +332,160 @@ function getRowsByType(type){
   return state.rows.filter(r=>r.typeClass===type);
 }
 function analyze(rows, allRows, selectedType){
-  const validAll = allRows.filter(r=>r.typeClass==='gold'||r.typeClass==='gems');
-  const totalAllUsersSet = new Set(validAll.map(r=>r.displayId));
-  const totalAllOrders = validAll.length;
-  const totalAllRevenue = sum(validAll.map(r=>r.price));
+  const totalAllOrders = allRows.length;
+  const totalAllRevenue = sum(allRows.map(r=>r.price));
+  const allUsersSet = new Set(allRows.map(r=>r.displayId));
+  const selectedUsers = new Set(rows.map(r=>r.displayId));
 
-  const dailyMap = new Map(), methodMap=new Map(), latencyBuckets={'0-1 dk | 分钟':0,'1-10 dk | 分钟':0,'10-60 dk | 分钟':0,'60+ dk | 分钟':0};
-  const hourArr = Array.from({length:24},()=>0);
-  const userMap = new Map(), pkgMap = new Map();
-  const typeStats = {gold:{orders:0,revenue:0,users:new Set()}, gems:{orders:0,revenue:0,users:new Set()}};
+  const daily = new Map(), methods = new Map();
+  const hours = Array.from({length:24},()=>0);
+  const latBuckets = {'0-1 dk | 分钟':0,'1-10 dk | 分钟':0,'10-60 dk | 分钟':0,'60+ dk | 分钟':0};
+  const users = new Map();
+  const packageMap = new Map();
+  const weeks = new Set();
   const typeDaily = {gold:new Map(), gems:new Map()};
-  const ipMap = new Map(), deviceMap = new Map();
 
-  rows.forEach(r=>{
-    if(!dailyMap.has(r.day)) dailyMap.set(r.day,{rev:0,orders:0});
-    dailyMap.get(r.day).rev += r.price; dailyMap.get(r.day).orders += 1;
-    methodMap.set(r.method,(methodMap.get(r.method)||0)+r.price);
-    hourArr[r.hour] += 1;
+  const typeStats = {
+    gold:{orders:0,revenue:0,users:new Set()},
+    gems:{orders:0,revenue:0,users:new Set()}
+  };
 
-    const latMin = r.orderTime ? Math.max(0, (r.payTime-r.orderTime)/60000) : 0;
-    if(latMin<=1) latencyBuckets['0-1 dk | 分钟']++; else if(latMin<=10) latencyBuckets['1-10 dk | 分钟']++; else if(latMin<=60) latencyBuckets['10-60 dk | 分钟']++; else latencyBuckets['60+ dk | 分钟']++;
-
-    if(!userMap.has(r.displayId)) userMap.set(r.displayId,{id:r.displayId, rows:[], packages:new Map(), types:new Map(), totalRev:0, firstPay:r.payTime, lastPay:r.payTime});
-    const u=userMap.get(r.displayId);
-    u.rows.push(r); u.totalRev += r.price; if(r.payTime<u.firstPay)u.firstPay=r.payTime; if(r.payTime>u.lastPay)u.lastPay=r.payTime;
-    u.packages.set(r.productName,(u.packages.get(r.productName)||0)+1);
-    u.types.set(r.typeClass,(u.types.get(r.typeClass)||0)+1);
-
-    if(!pkgMap.has(r.productName)) pkgMap.set(r.productName,{name:r.productName, typeClass:r.typeClass, qty:0, rev:0, users:new Set(), days:new Map(), weeks:new Map(), prices:[]});
-    const p=pkgMap.get(r.productName);
-    p.qty += 1; p.rev += r.price; p.users.add(r.displayId); p.prices.push(r.price);
-    if(!p.days.has(r.day)) p.days.set(r.day,{qty:0,rev:0}); p.days.get(r.day).qty += 1; p.days.get(r.day).rev += r.price;
-    if(!p.weeks.has(r.week)) p.weeks.set(r.week,{qty:0,rev:0}); p.weeks.get(r.week).qty += 1; p.weeks.get(r.week).rev += r.price;
-
-    if(r.typeClass==='gold' || r.typeClass==='gems'){
-      typeStats[r.typeClass].orders += 1; typeStats[r.typeClass].revenue += r.price; typeStats[r.typeClass].users.add(r.displayId);
-      if(!typeDaily[r.typeClass].has(r.day)) typeDaily[r.typeClass].set(r.day,{revenue:0,orders:0});
-      typeDaily[r.typeClass].get(r.day).revenue += r.price; typeDaily[r.typeClass].get(r.day).orders += 1;
+  for (const r of allRows){
+    if (r.typeClass==='gold' || r.typeClass==='gems'){
+      typeStats[r.typeClass].orders += 1;
+      typeStats[r.typeClass].revenue += r.price;
+      typeStats[r.typeClass].users.add(r.displayId);
+      if (typeDaily[r.typeClass] && !typeDaily[r.typeClass].has(r.day)) typeDaily[r.typeClass].set(r.day,{day:r.day,orders:0,revenue:0});
+      if (typeDaily[r.typeClass]) typeDaily[r.typeClass].get(r.day).orders += 1;
+      if (typeDaily[r.typeClass]) typeDaily[r.typeClass].get(r.day).revenue += r.price;
     }
-    if(r.ip) { if(!ipMap.has(r.ip)) ipMap.set(r.ip,new Set()); ipMap.get(r.ip).add(r.displayId); }
-    if(r.device) { if(!deviceMap.has(r.device)) deviceMap.set(r.device,new Set()); deviceMap.get(r.device).add(r.displayId); }
-  });
+  }
 
-  const packagePrices = [...pkgMap.values()].map(p=>p.avgPrice=sum(p.prices)/p.prices.length);
-  const highThreshold = getQuantile(packagePrices.filter(x=>x>0), .8);
+  for (const r of rows){
+    weeks.add(r.week);
+    if (!users.has(r.displayId)) users.set(r.displayId,{id:r.displayId,rows:[],totalRev:0,orders:0,productCounts:new Map(),weeks:new Map(),devices:new Set(),ips:new Set(),lastPay:null,firstPay:null});
+    const u = users.get(r.displayId);
+    u.rows.push(r); u.totalRev += r.price; u.orders += 1; u.devices.add(r.device); u.ips.add(r.ip);
+    u.lastPay = !u.lastPay || r.payTime > u.lastPay ? r.payTime : u.lastPay;
+    u.firstPay = !u.firstPay || r.payTime < u.firstPay ? r.payTime : u.firstPay;
+    u.productCounts.set(r.productName,(u.productCounts.get(r.productName)||0)+1);
+    if (!u.weeks.has(r.week)) u.weeks.set(r.week,new Map());
+    u.weeks.get(r.week).set(r.productName,(u.weeks.get(r.week).get(r.productName)||0)+1);
 
-  const packages=[...pkgMap.values()].map(p=>({
-    ...p,
-    avgPrice:p.avgPrice || 0,
-    isHighTier:(p.avgPrice||0) >= highThreshold,
-    dailyQtyObj:Object.fromEntries([...p.days].map(([k,v])=>[k,v.qty])),
-    dailyRevObj:Object.fromEntries([...p.days].map(([k,v])=>[k,v.rev])),
-    weeklyQtyObj:Object.fromEntries([...p.weeks].map(([k,v])=>[k,v.qty])),
-    weeklyRevObj:Object.fromEntries([...p.weeks].map(([k,v])=>[k,v.rev]))
-  })).sort((a,b)=>b.rev-a.rev);
+    if (!packageMap.has(r.productName)) packageMap.set(r.productName,{name:r.productName,qty:0,rev:0,users:new Set(),dailyQty:new Map(),dailyRev:new Map(),weeklyQty:new Map(),prices:[]});
+    const p = packageMap.get(r.productName);
+    p.qty += 1; p.rev += r.price; p.users.add(r.displayId); p.prices.push(r.price);
+    p.dailyQty.set(r.day,(p.dailyQty.get(r.day)||0)+1);
+    p.dailyRev.set(r.day,(p.dailyRev.get(r.day)||0)+r.price);
+    p.weeklyQty.set(r.week,(p.weeklyQty.get(r.week)||0)+1);
 
-  const userStats=[...userMap.values()].map(u=>{
-    const orderCount=u.rows.length;
-    const dominantPackage=[...u.packages.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || '-';
-    const dominantCnt=[...u.packages.values()].sort((a,b)=>b-a)[0]||0;
-    const dominantRatio = orderCount ? dominantCnt/orderCount : 0;
-    const band = dominantRatio===1 ? 'Tam tek paket | 完全单礼包' : dominantRatio>=.8 ? 'Yüksek sadakat | 高忠诚' : dominantRatio>=.6 ? 'Baskın paketli | 主导礼包' : 'Karışık | 混合';
-    const highRows = u.rows.filter(r=>{
-      const p = packages.find(x=>x.name===r.productName);
-      return p?.isHighTier;
-    });
-    const dominantTypeEntry=[...u.types.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || 'mixed';
+    if (!daily.has(r.day)) daily.set(r.day,{day:r.day,rev:0,orders:0});
+    daily.get(r.day).rev += r.price;
+    daily.get(r.day).orders += 1;
+
+    methods.set(r.method,(methods.get(r.method)||0)+r.price);
+    hours[r.hour] += 1;
+
+    const latencyMin = r.orderTime ? Math.max(0, (r.payTime - r.orderTime)/60000) : 0;
+    if (latencyMin<=1) latBuckets['0-1 dk | 分钟']++;
+    else if (latencyMin<=10) latBuckets['1-10 dk | 分钟']++;
+    else if (latencyMin<=60) latBuckets['10-60 dk | 分钟']++;
+    else latBuckets['60+ dk | 分钟']++;
+  }
+
+  const packagePriceList = [...packageMap.values()].map(p=>sum(p.prices)/Math.max(1,p.prices.length));
+  const highThreshold = getQuantile(packagePriceList, 0.8);
+
+  const packages = [...packageMap.values()].map(p=>{
+    const avgPrice = sum(p.prices)/Math.max(1,p.prices.length);
     return {
-      id:u.id, totalRev:u.totalRev, orders:orderCount, firstPay:u.firstPay, lastPay:u.lastPay, daysSinceLast:(Date.now()-u.lastPay)/86400000,
-      dominantPackage, dominantRatio, loyalBand:band, highRows, highCount:highRows.length, highRev:sum(highRows.map(r=>r.price)),
-      topHigh:[...highRows.reduce((m,r)=>(m.set(r.productName,(m.get(r.productName)||0)+1),m),new Map()).entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || '-',
-      dominantType:dominantTypeEntry
+      ...p,
+      avgPrice,
+      isHighTier: avgPrice >= highThreshold,
+      dailyQtyObj: Object.fromEntries(p.dailyQty.entries()),
+      dailyRevObj: Object.fromEntries(p.dailyRev.entries()),
+      weeklyQtyObj: Object.fromEntries(p.weeklyQty.entries())
     };
+  }).sort((a,b)=>b.rev-a.rev);
+
+  const highPackageNames = new Set(packages.filter(p=>p.isHighTier).map(p=>p.name));
+
+  const userStats = [...users.values()].map(u=>{
+    const topPkgEntry=[...u.productCounts.entries()].sort((a,b)=>b[1]-a[1])[0] || ['-',0];
+    const dominantRatio=u.orders ? topPkgEntry[1]/u.orders : 0;
+    const loyalBand = dominantRatio === 1 ? 'Tam tek paket | 完全单礼包' : dominantRatio >= .8 ? 'Yüksek sadakat | 高忠诚' : dominantRatio >= .6 ? 'Baskın paketli | 主导礼包' : 'Karışık | 混合';
+    const highRows=u.rows.filter(r=>highPackageNames && typeof highPackageNames.has==='function' && highPackageNames.has(r.productName));
+    const highAgg={}; highRows.forEach(r=>{ highAgg[r.productName]=(highAgg[r.productName]||0)+1; });
+    const topHigh=Object.entries(highAgg).sort((a,b)=>b[1]-a[1])[0]?.[0] || '-';
+    const dominantTypeCounts={gold:0,gems:0,other:0}; u.rows.forEach(r=>dominantTypeCounts[r.typeClass]=(dominantTypeCounts[r.typeClass]||0)+1);
+    let dominantType='mixed';
+    const maxType = Object.entries(dominantTypeCounts).sort((a,b)=>b[1]-a[1])[0];
+    if (maxType && maxType[1]===u.rows.length && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
+    else if (maxType && maxType[1]/u.rows.length>=0.6 && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
+    return {id:u.id,totalRev:u.totalRev,orders:u.orders,dominantPackage:topPkgEntry[0],dominantRatio,loyalBand,lastPay:u.lastPay,firstPay:u.firstPay,devices:u.devices.size,ips:u.ips.size,weeks:u.weeks,rows:u.rows,highRows,highCount:highRows.length,highRev:sum(highRows.map(r=>r.price)),topHigh,dominantType};
   }).sort((a,b)=>b.totalRev-a.totalRev);
 
-  const loyalUsers=userStats.filter(u=>u.dominantRatio>=.8).sort((a,b)=>b.totalRev-a.totalRev);
-  const highUsers=userStats.filter(u=>u.highCount>0).sort((a,b)=>b.highRev-a.highRev);
+  const loyalUsers = userStats.filter(u=>u.dominantRatio>=0.8).sort((a,b)=>b.dominantRatio-a.dominantRatio || b.totalRev-a.totalRev).slice(0,100);
+  const highUsers = userStats.filter(u=>u.highCount>0).sort((a,b)=>b.highRev-a.highRev);
+  const weeklyList=[...weeks].sort();
+  const userById=Object.fromEntries(userStats.map(u=>[u.id,u]));
 
-  const daily=[...dailyMap.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([day,v])=>({day,...v}));
-  const methods=[...methodMap.entries()].sort((a,b)=>b[1]-a[1]);
-  const weeklyList=[...new Set(rows.map(r=>r.week))].sort();
+  const firstWeekUsers={};
+  for(const u of userStats){
+    const fw=getWeekKey(u.firstPay);
+    if(!firstWeekUsers[fw]) firstWeekUsers[fw]=new Set();
+    firstWeekUsers[fw].add(u.id);
+  }
+  const cohort=Object.entries(firstWeekUsers).sort((a,b)=>a[0].localeCompare(b[0])).slice(-10).map(([week,ids])=>{
+    const row={cohort:week,size:ids.size,values:[]}; const idArr=[...ids];
+    weeklyList.forEach(wk=>{ if(wk<week) return; const active=idArr.filter(id=>userById[id].rows.some(r=>r.week===wk)).length; row.values.push({week:wk,pct: ids.size ? Math.round(active/ids.size*100) : 0}); });
+    return row;
+  });
 
   const riskRows = [];
-  [...ipMap.entries()].filter(([,s])=>s.size>=3).sort((a,b)=>b[1].size-a[1].size).slice(0,15).forEach(([ip,s])=>{
-    riskRows.push({type:'IP', value:ip, count:s.size, sample:[...s].slice(0,5).join(', ')});
+  const ipGroups = byGroup(rows.filter(r=>r.ip), r=>r.ip);
+  Object.entries(ipGroups).filter(([,arr])=>new Set(arr.map(x=>x.displayId)).size>=3).sort((a,b)=>new Set(b[1].map(x=>x.displayId)).size - new Set(a[1].map(x=>x.displayId)).size).slice(0,10).forEach(([val,arr])=>{
+    const ids=[...new Set(arr.map(x=>x.displayId))]; riskRows.push({type:'IP',value:val,count:ids.length,sample:ids.slice(0,5).join(', ')});
   });
-  [...deviceMap.entries()].filter(([,s])=>s.size>=3).sort((a,b)=>b[1].size-a[1].size).slice(0,15).forEach(([dev,s])=>{
-    riskRows.push({type:'Cihaz | 设备', value:dev, count:s.size, sample:[...s].slice(0,5).join(', ')});
+  const deviceGroups = byGroup(rows.filter(r=>r.device), r=>r.device);
+  Object.entries(deviceGroups).filter(([,arr])=>new Set(arr.map(x=>x.displayId)).size>=3).sort((a,b)=>new Set(b[1].map(x=>x.displayId)).size - new Set(a[1].map(x=>x.displayId)).size).slice(0,10).forEach(([val,arr])=>{
+    const ids=[...new Set(arr.map(x=>x.displayId))]; riskRows.push({type:'Cihaz | 设备',value:val,count:ids.length,sample:ids.slice(0,5).join(', ')});
   });
 
-  const totalUsers = new Set(rows.map(r=>r.displayId)).size;
-  const totalRevenue = sum(rows.map(r=>r.price));
-  const totalOrders = rows.length;
+  let orderShare = selectedType==='all' ? 100 : (rows.length/Math.max(1,totalAllOrders)*100);
+  let revenueShare = selectedType==='all' ? 100 : (sum(rows.map(r=>r.price))/Math.max(1,totalAllRevenue)*100);
+  let userPenetration = selectedType==='all' ? 100 : (selectedUsers.size/Math.max(1,allUsersSet.size)*100);
+  let exclusiveUsers = 0;
+  if (selectedType !== 'all'){
+    const allByUser = byGroup(allRows, r=>r.displayId);
+    exclusiveUsers = Object.values(allByUser).filter(arr => arr.every(r=>r.typeClass===selectedType)).length;
+  }
 
-  const usersWithBoth = userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).length;
-  const exclusiveUsers = selectedType==='all' ? 0 : userStats.filter(u=>u.types.size===1 && u.types.has(selectedType)).length;
-  const selectedStats = selectedType==='all' ? null : typeStats[selectedType];
-  const orderShare = selectedType==='all' ? 100 : (selectedStats.orders/totalAllOrders*100 || 0);
-  const revenueShare = selectedType==='all' ? 100 : (selectedStats.revenue/totalAllRevenue*100 || 0);
-  const userPenetration = selectedType==='all' ? 100 : (selectedStats.users.size/totalAllUsersSet.size*100 || 0);
-
-  const typeUserGroups = [
-    {label:'Gold baskın | 金币主导', users:userStats.filter(u=>u.dominantType==='gold').length, revenue:sum(userStats.filter(u=>u.dominantType==='gold').map(u=>u.totalRev)), orders:sum(userStats.filter(u=>u.dominantType==='gold').map(u=>u.orders)), avgDays:sum(userStats.filter(u=>u.dominantType==='gold').map(u=>u.daysSinceLast))/Math.max(1,userStats.filter(u=>u.dominantType==='gold').length)},
-    {label:'Gems baskın | 宝石主导', users:userStats.filter(u=>u.dominantType==='gems').length, revenue:sum(userStats.filter(u=>u.dominantType==='gems').map(u=>u.totalRev)), orders:sum(userStats.filter(u=>u.dominantType==='gems').map(u=>u.orders)), avgDays:sum(userStats.filter(u=>u.dominantType==='gems').map(u=>u.daysSinceLast))/Math.max(1,userStats.filter(u=>u.dominantType==='gems').length)},
-    {label:'Karma kullanıcı | 混合用户', users:usersWithBoth, revenue:sum(userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).map(u=>u.totalRev)), orders:sum(userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).map(u=>u.orders)), avgDays:sum(userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).map(u=>u.daysSinceLast))/Math.max(1,usersWithBoth)}
-  ].map(g=>({...g, avgOrder:g.orders?g.revenue/g.orders:0}));
+  const typeUserGroups = ['gold','gems','mixed'].map(type=>{
+    let usersSubset = userStats.filter(u=> type==='mixed' ? (u.dominantType!=='gold' && u.dominantType!=='gems') : u.dominantType===type);
+    const avgDays = usersSubset.length ? sum(usersSubset.map(u=>Math.floor((Date.now()-u.lastPay.getTime())/86400000)))/usersSubset.length : 0;
+    return {
+      label: type==='gold' ? 'Gold-dominant | 金币主导' : type==='gems' ? 'Gems-dominant | 宝石主导' : 'Karma | 混合',
+      users: usersSubset.length,
+      revenue: sum(usersSubset.map(u=>u.totalRev)),
+      orders: sum(usersSubset.map(u=>u.orders)),
+      avgOrder: usersSubset.length ? sum(usersSubset.map(u=>u.totalRev))/sum(usersSubset.map(u=>u.orders)||[1]) : 0,
+      avgDays
+    };
+  });
 
   return {
-    selectedType, selectedLabel:typeLabel(selectedType), rows, totalUsers, totalRevenue, totalOrders, avgOrder: totalOrders ? totalRevenue/totalOrders : 0,
-    daily, methods, hours:hourArr, latBuckets:latencyBuckets, userStats, loyalUsers, highUsers, packages, riskRows,
-    typeStats, typeDaily, totalAllUsers: totalAllUsersSet.size, totalAllOrders, totalAllRevenue, usersWithBoth, exclusiveUsers, orderShare, revenueShare, userPenetration, typeUserGroups, weeklyList
+    selectedType,
+    selectedLabel: typeLabel(selectedType),
+    totalOrders: rows.length,
+    totalUsers: selectedUsers.size,
+    totalRevenue: sum(rows.map(r=>r.price)),
+    avgOrder: rows.length ? sum(rows.map(r=>r.price))/rows.length : 0,
+    orderShare, revenueShare, userPenetration, exclusiveUsers,
+    daily:[...daily.values()].sort((a,b)=>a.day.localeCompare(b.day)),
+    methods:[...methods.entries()].sort((a,b)=>b[1]-a[1]),
+    hours, latBuckets, packages, userStats, loyalUsers, highUsers, highThreshold, cohort, weeklyList, riskRows, typeStats, typeDaily, typeUserGroups,
+    totalAllUsers: allUsersSet.size, totalAllRevenue, totalAllOrders
   };
 }
 function destroyChart(id){ if(state.charts[id]) state.charts[id].destroy(); }
@@ -712,13 +757,11 @@ async function exportPdfReport(){
 
   setStatus('PDF hazırlanıyor, lütfen bekle... | PDF 正在生成，请稍候...');
 
-  // wait one frame so charts finish painting
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
 
   const { jsPDF } = window.jspdf;
   const selectedMap = {all:'Tümü | 全部', gold:'Gold | 金币', gems:'Gems | 宝石'};
 
-  // Create off-screen export DOM from live page so fonts/Chinese/charts remain as rendered
   const exportRoot = document.createElement('div');
   exportRoot.style.position = 'fixed';
   exportRoot.style.left = '-100000px';
@@ -755,7 +798,6 @@ async function exportPdfReport(){
   function cloneBlock(node){
     const clone = node.cloneNode(true);
 
-    // Replace cloned canvas with image rendered from live canvas
     const cloneCanvases = [...clone.querySelectorAll('canvas')];
     const liveCanvases = [...node.querySelectorAll('canvas')];
 
@@ -780,7 +822,6 @@ async function exportPdfReport(){
       c.parentNode.replaceChild(img, c);
     });
 
-    // keep details content expanded in export
     clone.querySelectorAll('details').forEach(d=>d.setAttribute('open','open'));
     clone.querySelectorAll('summary').forEach(s=>s.style.display='none');
 
@@ -814,7 +855,6 @@ async function exportPdfReport(){
   document.body.appendChild(exportRoot);
 
   try{
-    // wait for dataURL images to settle
     const imgs = [...exportRoot.querySelectorAll('img')];
     await Promise.all(imgs.map(img => {
       if (img.complete) return Promise.resolve();
@@ -858,7 +898,6 @@ async function exportPdfReport(){
     while(sourceY < canvas.height){
       if(page > 0) pdf.addPage();
 
-      // header on every page, Latin only for PDF font safety
       pdf.setFillColor(13,27,46);
       pdf.roundedRect(margin, margin, pageW - margin*2, headerH, 14, 14, 'F');
       pdf.setFont('helvetica','bold');
@@ -912,7 +951,7 @@ async function loadFile(file){
     render();
   }catch(err){
     console.error(err);
-    setStatus('Yükleme hatası | 加载错误: ' + err.message, true);
+    setStatus('Yükleme hatası | 加载错误: ' + err.message + ' | Analiz akışı güvenli modda durduruldu. | 分析流程已安全停止。', true);
   }
 }
 el('fileInput').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadFile(f); });

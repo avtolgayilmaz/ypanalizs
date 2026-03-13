@@ -1,856 +1,629 @@
-import base64, os, textwrap
-logo_path='/mnt/data/8f57732a-45ae-439d-96b7-1f43bc7a1f50.png'
-with open(logo_path,'rb') as f:
-    b64=base64.b64encode(f.read()).decode('ascii')
-
-html_template = r"""<!DOCTYPE html>
+from pathlib import Path
+html = r'''<!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>YAVER Ödeme İstihbarat Paneli</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YAVER Ödeme İstihbarat Paneli | YAVER 支付情报面板</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-:root {
-  --bg:#081225; --panel:#0f1c33; --panel2:#122443; --muted:#93a4c2; --text:#edf3ff;
-  --line:#203559; --brand:#14c7ff; --brand2:#ffc400; --good:#1ec97f; --warn:#ffb020; --bad:#ff5d6c;
+:root{
+  --bg:#07111f; --panel:#0d1b2e; --panel2:#112542; --line:#223a5f; --muted:#9cb0d1; --text:#eef4ff;
+  --brand:#18c7ff; --brand2:#3b82f6; --gold:#ffcc00; --gems:#35d399; --warn:#ffb84d; --bad:#ff6677; --chip:#162b4b;
 }
-* { box-sizing:border-box; }
-body { margin:0; font-family:Inter,system-ui,Arial,sans-serif; background:#07101f; color:var(--text); }
-header { position:sticky; top:0; z-index:20; background:rgba(7,16,31,.92); border-bottom:1px solid var(--line); backdrop-filter: blur(10px); }
-.wrap { max-width:1600px; margin:0 auto; padding:0 20px; }
-.head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 0; }
-.brand { display:flex; align-items:center; gap:14px; }
-.brand img { height:48px; width:auto; border-radius:10px; box-shadow:0 8px 20px rgba(0,0,0,.35); }
-.brand .title { font-size:24px; font-weight:800; letter-spacing:.2px; }
-.brand .sub { color:var(--muted); font-size:13px; }
-.controls { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-button,.btn,input,select { background:var(--panel2); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; }
-button:hover,.btn:hover { border-color:var(--brand); cursor:pointer; }
-main { padding:24px 0 60px; }
-.panel { background:linear-gradient(180deg, rgba(18,36,67,.92), rgba(11,24,45,.96)); border:1px solid var(--line); border-radius:18px; box-shadow:0 18px 40px rgba(0,0,0,.18); }
-.hero { padding:22px; display:grid; grid-template-columns:1.3fr .7fr; gap:18px; margin-bottom:18px; }
-.hero h1 { margin:0 0 8px; font-size:28px; }
-.hero p { margin:0; color:var(--muted); line-height:1.6; }
-.drop { border:1.5px dashed #33517e; border-radius:16px; padding:22px; min-height:150px; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:10px; text-align:center; background:rgba(20,38,70,.45); }
-.drop.drag { border-color:var(--brand); background:rgba(20,60,110,.35); }
-.grid-kpi { display:grid; grid-template-columns:repeat(6,1fr); gap:14px; margin:18px 0; }
-.kpi { padding:16px; }
-.kpi .label { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.08em; }
-.kpi .value { font-size:28px; font-weight:800; margin-top:8px; }
-.kpi .small { color:var(--muted); font-size:12px; margin-top:4px; }
-.section { margin-top:18px; }
-.section .sh { display:flex; justify-content:space-between; align-items:end; margin:0 0 10px; }
-.section .sh h2 { margin:0; font-size:20px; }
-.section .sh p { margin:4px 0 0; color:var(--muted); font-size:13px; }
-.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
-.grid-3 { display:grid; grid-template-columns:1.1fr .9fr .9fr; gap:18px; }
-.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:18px; }
-.card { padding:16px; }
-.table-wrap { overflow:auto; max-height:520px; }
-table { width:100%; border-collapse:collapse; font-size:13px; }
-th,td { padding:10px 8px; border-bottom:1px solid rgba(255,255,255,.06); text-align:left; white-space:nowrap; }
-th { position:sticky; top:0; background:#10203b; z-index:1; }
-tr:hover td { background:rgba(255,255,255,.025); }
-.badge { display:inline-block; padding:4px 8px; border-radius:999px; font-size:11px; font-weight:700; }
-.good { background:rgba(30,201,127,.16); color:#8ff0c0; }
-.warn { background:rgba(255,176,32,.18); color:#ffd485; }
-.bad { background:rgba(255,93,108,.16); color:#ffb1b8; }
-.muted { color:var(--muted); }
-canvas { width:100%; height:330px; }
-.smallcanvas { height:260px; }
-.cohort { overflow:auto; }
-.cohort table td { text-align:center; min-width:58px; }
-.note { font-size:12px; color:var(--muted); }
-.alert-list { display:grid; gap:10px; }
-.alert { padding:12px 14px; border-left:4px solid; border-radius:12px; background:rgba(255,255,255,.03); }
-.alert.bad { border-color:var(--bad); }
-.alert.warn { border-color:var(--warn); }
-.alert.good { border-color:var(--good); }
-.filters { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.hidden { display:none !important; }
-@media (max-width:1200px) { .grid-kpi{grid-template-columns:repeat(3,1fr)} .grid-2,.grid-3,.grid-4,.hero{grid-template-columns:1fr;} }
-@media (max-width:700px) { .grid-kpi{grid-template-columns:repeat(2,1fr)} .head{flex-direction:column; align-items:flex-start;} }
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#07111f 0,#09162a 100%);color:var(--text)}
+header{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:rgba(7,17,31,.92);border-bottom:1px solid var(--line)}
+.wrap{max-width:1600px;margin:0 auto;padding:0 20px}
+.head{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:26px;min-width:0;flex:1 1 900px}
+.wordmark-wrap{flex:0 0 420px;max-width:100%;display:flex;align-items:center;justify-content:center;min-height:150px}
+.wordmark{font-weight:900;font-size:92px;line-height:1;letter-spacing:2px;margin:0;white-space:nowrap;background:linear-gradient(90deg,#18c7ff 0%,#12d3ff 28%,#4fe19a 56%,#ffcc00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 10px 28px rgba(24,199,255,.10)}
+.brand-copy h1{margin:0;font-size:34px;line-height:1.1}
+.brand-copy p{margin:10px 0 0;color:var(--muted);max-width:860px;line-height:1.5}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
+button,.btn,select,input{font:inherit}
+.btn{border:none;background:var(--panel2);color:var(--text);padding:12px 16px;border-radius:12px;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
+.btn:hover{filter:brightness(1.08)}
+.btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#04101f;font-weight:700}
+main{padding:22px 0 44px}
+.panel{background:linear-gradient(180deg,rgba(17,37,66,.95),rgba(11,24,42,.95));border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.hero{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:18px}
+.uploader{border:2px dashed #335784;min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;transition:.2s}
+.uploader.drag{border-color:var(--brand);background:rgba(24,199,255,.05)}
+.uploader strong{display:block;font-size:20px;margin-bottom:10px}
+.small{color:var(--muted);font-size:13px}
+.status{margin-top:12px;font-size:14px;color:var(--brand)}
+.filter-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.filter-left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.filter-title{font-size:15px;color:var(--muted)}
+.segment-switch{display:flex;gap:8px;flex-wrap:wrap}
+.seg-btn{padding:10px 16px;border-radius:999px;background:#10213a;border:1px solid var(--line);color:var(--text);cursor:pointer;font-weight:700}
+.seg-btn.active[data-type="all"]{background:linear-gradient(90deg,#18c7ff,#3b82f6);color:#04101f}
+.seg-btn.active[data-type="gold"]{background:linear-gradient(90deg,#ffcc00,#ff9f0a);color:#271700}
+.seg-btn.active[data-type="gems"]{background:linear-gradient(90deg,#35d399,#10b981);color:#032115}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.card{background:linear-gradient(180deg,rgba(13,27,46,.96),rgba(10,22,39,.96));border:1px solid var(--line);border-radius:18px;padding:18px}
+.kpi .label{color:var(--muted);font-size:13px}
+.kpi .value{font-size:34px;font-weight:800;margin-top:6px}
+.kpi .sub{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.45}
+.section-toggle{margin:24px 0 0}
+.section-toggle summary{list-style:none;cursor:pointer;padding:16px 20px;background:linear-gradient(180deg,rgba(17,37,66,.95),rgba(11,24,42,.95));border:1px solid var(--line);border-radius:16px;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.section-toggle summary::-webkit-details-marker{display:none}
+.section-toggle summary .hint{font-size:13px;font-weight:500;color:var(--muted)}
+.section-toggle[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
+.section-body{padding:16px 0 0}
+canvas{width:100% !important;height:340px !important}
+.table-wrap{overflow:auto;max-height:560px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:#10213a;z-index:1}
+tr:hover td{background:rgba(255,255,255,.02)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+select{background:#10213a;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.notice{padding:12px 14px;border-left:4px solid var(--warn);background:rgba(255,184,77,.08);color:#ffe0ad;border-radius:10px;margin-bottom:12px}
+.footer-note{color:var(--muted);font-size:13px;margin-top:12px;line-height:1.55}
+.hidden{display:none}
+.bad{color:var(--bad)} .warn{color:var(--warn)} .good{color:#23c27f}
+.heat table td{text-align:center;min-width:72px}
+.legend-inline{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:6px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:6px}
+.dot.gold{background:var(--gold)} .dot.gems{background:var(--gems)} .dot.all{background:var(--brand)}
+.empty-note{color:var(--muted);font-size:14px;padding:12px 0}
+@media (max-width:1200px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}.brand{flex-direction:column;text-align:center}.brand-copy p{max-width:none}.wordmark-wrap{min-height:120px;flex-basis:100%}.wordmark{font-size:72px}}
+@media (max-width:780px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.head{justify-content:center}.wordmark{font-size:54px}.wordmark-wrap{min-height:90px}}
 </style>
 </head>
 <body>
 <header>
   <div class="wrap head">
     <div class="brand">
-      <img src="data:image/png;base64,__LOGO_B64__" alt="YAVER logo" />
-      <div>
-        <div class="title">YAVER Ödeme İstihbarat Paneli</div>
-        <div class="sub">Gerçek cohort, paket zekâsı, cihaz/IP risk sinyalleri, ödeme yöntemi analizi, high-tier kullanıcı laboratuvarı</div>
+      <div class="wordmark-wrap"><div class="wordmark">YAVER</div></div>
+      <div class="brand-copy">
+        <h1>YAVER Ödeme İstihbarat Paneli | YAVER 支付情报面板</h1>
+        <p>Ürün tipi filtresiyle karmaşıklığı azaltılmış sürüm. Tümü, Gold ve Gems arasında geçiş yaparak sadece seçili alanın analizlerini gör. | 通过产品类型筛选来降低复杂度。你可以在全部、金币和宝石之间切换，只查看所选部分的分析。</p>
       </div>
     </div>
-    <div class="controls">
-      <label class="btn">CSV / Excel Yükle <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" hidden></label>
-      <button id="loadSampleBtn">Yüklü örnek dosyayı kullan</button>
-      <button id="exportJsonBtn">Analiz JSON indir</button>
+    <div class="actions">
+      <label class="btn primary" for="fileInput">CSV / Excel yükle | 上传 CSV / Excel</label>
+      <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden">
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <section class="panel hero">
-    <div>
-      <h1>Bu sürümde gerçekten ne var?</h1>
-      <p>
-        Sahte AI yok. Sahte cohort yok. Bu sürüm ödeme verisini baştan sona temizleyip
-        <b>veri kalite kontrolü</b>, <b>gerçek haftalık cohort</b>, <b>paket bazlı günlük adet ve ciro</b>,
-        <b>paket sadakati</b>, <b>high-tier kullanıcı listesi</b>, <b>haftalık high-tier paket matrisi</b>,
-        <b>ödeme yöntemi ve kanal performansı</b>, <b>cihaz/IP paylaşım risk sinyalleri</b>,
-        <b>gelir yoğunlaşması</b> ve <b>eylem önerileri</b> üretir.
-      </p>
-      <p style="margin-top:12px">
-        İstediğin dört yeni madde de gömüldü:
-        <b>paket başına günlük adet grafiği</b>,
-        <b>aynı pakete sadık kullanıcı analizi</b>,
-        <b>yüksek paket kullanıcılarının hafta hafta paket kırılımı</b>,
-        <b>her paket için ayrı zamansal grafik</b>.
-      </p>
+  <section class="hero">
+    <div class="panel">
+      <div class="filter-bar">
+        <div class="filter-left">
+          <div class="filter-title">Görüntü filtresi | 显示筛选</div>
+          <div class="segment-switch">
+            <button class="seg-btn active" data-type="all">Tümü | 全部</button>
+            <button class="seg-btn" data-type="gold">Gold | 金币</button>
+            <button class="seg-btn" data-type="gems">Gems | 宝石</button>
+          </div>
+        </div>
+        <div class="legend-inline">
+          <span><span class="dot all"></span>Tümü | 全部</span>
+          <span><span class="dot gold"></span>Gold | 金币</span>
+          <span><span class="dot gems"></span>Gems | 宝石</span>
+        </div>
+      </div>
     </div>
-    <div id="dropZone" class="drop">
-      <div style="font-size:18px;font-weight:800">Dosyayı buraya bırak</div>
-      <div class="muted">Beklenen alanlar: 显示ID / 商品名称 / 商品价格 / 下单时间 / 支付时间 / 支付方式 / 充值IP / 设备</div>
-      <div class="note">Örnek CSV ile uyumlu. İlk yüklemede tüm analizler yeniden hesaplanır.</div>
+    <div class="panel uploader" id="dropZone">
+      <div>
+        <strong>Dosyayı buraya bırak | 拖拽文件到这里</strong>
+        <div class="small">Beklenen alanlar | 预期字段: 显示ID / 商品名称 / 商品类型 / 商品价格 / 下单时间 / 支付时间 / 支付方式 / 充值IP / 设备</div>
+        <div class="small" style="margin-top:10px;">Sürükle bırak kullanabilir veya aşağıdaki butondan dosya seçebilirsin. | 你可以拖拽上传，也可以点击下方按钮选择文件。</div>
+        <div class="actions" style="justify-content:center; margin-top:16px;">
+          <label class="btn primary" for="fileInput">Dosya seç ve yükle | 选择并上传文件</label>
+        </div>
+        <div class="status" id="statusText" style="margin-top:14px; text-align:center;">Henüz veri yüklenmedi. | 尚未加载数据。</div>
+      </div>
     </div>
   </section>
 
-  <div id="dashboard" class="hidden">
-    <section class="grid-kpi" id="kpiGrid"></section>
+  <section class="grid4" id="kpis"></section>
 
-    <section class="section">
-      <div class="sh"><div><h2>Veri kalite ve kritik sinyaller</h2><p>Önce veri. Çürük veri üstüne analiz kurmak ucuz sihirbazlık olur.</p></div></div>
-      <div class="grid-2">
-        <div class="panel card">
-          <div class="alert-list" id="alertList"></div>
+  <details class="section-toggle" open>
+    <summary>
+      <span>1. Genel görünüm ve ürün tipi oranları | 总览与产品类型占比</span>
+      <span class="hint">Aç / Kapat | 展开 / 收起</span>
+    </summary>
+    <div class="section-body">
+      <section class="grid4" id="typeKpis"></section>
+      <section class="grid2">
+        <div class="card"><h3>Günlük ciro ve sipariş | 每日营收与订单</h3><canvas id="dailyChart"></canvas></div>
+        <div class="card"><h3>Gold / Gems karşılaştırması | 金币 / 宝石 对比</h3><canvas id="typeCompareChart"></canvas></div>
+      </section>
+      <section class="grid3" style="margin-top:16px;">
+        <div class="card"><h3>Ödeme yöntemi dağılımı | 支付方式分布</h3><canvas id="methodChart"></canvas></div>
+        <div class="card"><h3>Saatlik sipariş dağılımı | 按小时订单分布</h3><canvas id="hourChart"></canvas></div>
+        <div class="card"><h3>Ödeme gecikmesi dağılımı | 支付延迟分布</h3><canvas id="latencyChart"></canvas></div>
+      </section>
+    </div>
+  </details>
+
+  <details class="section-toggle" open>
+    <summary>
+      <span>2. Paket ve kullanıcı analizi | 礼包与用户分析</span>
+      <span class="hint">Aç / Kapat | 展开 / 收起</span>
+    </summary>
+    <div class="section-body">
+      <section class="grid2">
+        <div class="card"><h3>Hangi paketten hangi gün kaç adet alınmış | 每个礼包每日购买件数</h3><canvas id="pkgQtyChart"></canvas></div>
+        <div class="card"><h3>Hangi paketten hangi gün ne kadar ciro gelmiş | 每个礼包每日营收</h3><canvas id="pkgRevChart"></canvas></div>
+      </section>
+
+      <section class="card" style="margin-top:16px;">
+        <div class="controls">
+          <h3 style="margin:0;">Her paket için ayrı zamansal grafik | 每个礼包单独时间序列图</h3>
+          <select id="packageSelect"></select>
+          <select id="packageMetricSelect">
+            <option value="qty">Adet | 数量</option>
+            <option value="rev">Ciro | 营收</option>
+          </select>
+          <select id="packageGranularitySelect">
+            <option value="day">Günlük | 按日</option>
+            <option value="week">Haftalık | 按周</option>
+          </select>
         </div>
-        <div class="panel card">
-          <div class="table-wrap">
-            <table id="qualityTable"></table>
+        <canvas id="singlePackageChart"></canvas>
+      </section>
+
+      <section class="grid2" style="margin-top:16px;">
+        <div class="card">
+          <h3>Sürekli aynı paketi yükleyen kullanıcılar | 持续购买同一礼包的用户</h3>
+          <div class="table-wrap"><table><thead><tr><th>Kullanıcı | 用户</th><th>Baskın paket | 主导礼包</th><th>Sadakat oranı | 忠诚度</th><th>İşlem | 订单数</th><th>Toplam ciro | 总营收</th></tr></thead><tbody id="loyalUsersBody"></tbody></table></div>
+        </div>
+        <div class="card">
+          <h3>Yüksek paket yükleyen kullanıcılar | 高价礼包用户</h3>
+          <div class="controls">
+            <select id="highUserSelect"></select>
           </div>
+          <div class="table-wrap"><table><thead><tr><th>Kullanıcı | 用户</th><th>High-tier işlem | 高价订单</th><th>High-tier ciro | 高价营收</th><th>Baskın high paket | 主导高价礼包</th><th>Son ödeme | 最后支付</th></tr></thead><tbody id="highUsersBody"></tbody></table></div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section">
-      <div class="sh"><div><h2>Zaman ve ödeme operasyonları</h2><p>Günlük gelir, sipariş adedi, siparişten ödemeye gecikme ve ödeme yöntemi davranışı.</p></div></div>
-      <div class="grid-3">
-        <div class="panel card"><canvas id="dailyRevenueChart"></canvas></div>
-        <div class="panel card"><canvas id="hourlyChart" class="smallcanvas"></canvas></div>
-        <div class="panel card"><canvas id="latencyChart" class="smallcanvas"></canvas></div>
-      </div>
-      <div class="grid-2 section">
-        <div class="panel card"><canvas id="methodRevenueChart"></canvas></div>
-        <div class="panel card"><canvas id="countryChart"></canvas></div>
-      </div>
-    </section>
+      <section class="grid2" style="margin-top:16px;">
+        <div class="card"><h3>Seçili high-tier kullanıcının hafta hafta paket kırılımı | 所选高价用户每周礼包拆分</h3><canvas id="highUserChart"></canvas></div>
+        <div class="card heat"><h3>Seçili high-tier kullanıcının haftalık paket matrisi | 所选高价用户每周礼包矩阵</h3><div id="highUserMatrix"></div></div>
+      </section>
 
-    <section class="section">
-      <div class="sh"><div><h2>Gerçek cohort ve gelir yoğunlaşması</h2><p>İlk ödeme haftasına göre retention. Ayrıca gelir kaç kişiye bağlı, onu da kaçırmıyoruz.</p></div></div>
-      <div class="grid-2">
-        <div class="panel card cohort"><div id="cohortWrap"></div></div>
-        <div class="panel card"><canvas id="paretoChart"></canvas></div>
-      </div>
-    </section>
+      <section class="grid2" style="margin-top:16px;">
+        <div class="card">
+          <h3>Paket sadakati dağılımı | 礼包忠诚度分布</h3>
+          <canvas id="loyaltyChart"></canvas>
+        </div>
+        <div class="card">
+          <h3>Paket trend özeti | 礼包趋势汇总</h3>
+          <div class="table-wrap"><table><thead><tr><th>Paket | 礼包</th><th>Adet | 数量</th><th>Adet payı | 数量占比</th><th>Ciro | 营收</th><th>Ciro payı | 营收占比</th><th>Kullanıcı | 用户</th><th>Kullanıcı penetrasyonu | 用户渗透率</th><th>Kullanıcı başına sipariş | 人均订单</th><th>Ortalama fiyat | 平均价格</th></tr></thead><tbody id="packageSummaryBody"></tbody></table></div>
+        </div>
+      </section>
+    </div>
+  </details>
 
-    <section class="section">
-      <div class="sh"><div><h2>Paket zekâsı</h2><p>Günlük paket adedi, günlük paket cirosu, seçili paket zaman serisi ve paket bazlı trendler.</p></div></div>
-      <div class="filters">
-        <label>Paket grafiği <select id="packageSelect"></select></label>
-        <label>Gösterim <select id="packageMetricSelect"><option value="count">Adet</option><option value="revenue">Ciro</option></select></label>
-        <label>Zaman düzeyi <select id="timeGrainSelect"><option value="day">Günlük</option><option value="week">Haftalık</option></select></label>
-      </div>
-      <div class="grid-2 section">
-        <div class="panel card"><canvas id="packageDailyCountChart"></canvas></div>
-        <div class="panel card"><canvas id="packageDailyRevenueChart"></canvas></div>
-      </div>
-      <div class="grid-2 section">
-        <div class="panel card"><canvas id="selectedPackageChart"></canvas></div>
-        <div class="panel card table-wrap"><table id="packageTrendTable"></table></div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="sh"><div><h2>Paket sadakati</h2><p>Sürekli aynı paketi alan kullanıcılar ayrı sınıftır. Kim istikrarlı, kim kilitlenmiş, kim upgrade adayı, burada görülür.</p></div></div>
-      <div class="grid-2">
-        <div class="panel card"><canvas id="loyaltyDistChart"></canvas></div>
-        <div class="panel card table-wrap"><table id="loyaltyTable"></table></div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="sh"><div><h2>High-tier kullanıcı laboratuvarı</h2><p>Yüksek paket alan kullanıcı listesi, riskleri ve seçili kullanıcı için hafta hafta hangi paketten kaç adet aldığı.</p></div></div>
-      <div class="filters">
-        <label>High-tier kullanıcı <select id="highTierUserSelect"></select></label>
-      </div>
-      <div class="grid-2 section">
-        <div class="panel card table-wrap"><table id="highTierUsersTable"></table></div>
-        <div class="panel card"><canvas id="highTierWeeklyChart"></canvas></div>
-      </div>
-      <div class="panel card section table-wrap"><table id="highTierWeeklyMatrix"></table></div>
-    </section>
-
-    <section class="section">
-      <div class="sh"><div><h2>Cihaz ve IP risk sinyalleri</h2><p>Burada dolandırıcılık hükmü vermiyoruz. Risk sinyali üretiyoruz. Kanıt ile sinyali birbirine karıştırmak çocukça olur.</p></div></div>
-      <div class="grid-2">
-        <div class="panel card table-wrap"><table id="sharedDeviceTable"></table></div>
-        <div class="panel card table-wrap"><table id="sharedIpTable"></table></div>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="sh"><div><h2>Detay kullanıcı raporu</h2><p>RFM, risk, paket sadakati, high-tier payı, yöntem tercihleri ve eylem önerisi.</p></div></div>
-      <div class="panel card table-wrap"><table id="userDetailTable"></table></div>
-    </section>
-  </div>
+  <details class="section-toggle">
+    <summary>
+      <span>3. Risk, retention ve üst kullanıcılar | 风险、留存与头部用户</span>
+      <span class="hint">Aç / Kapat | 展开 / 收起</span>
+    </summary>
+    <div class="section-body">
+      <section class="grid2">
+        <div class="card heat"><h3>Gerçek haftalık cohort retention | 真实每周 cohort 留存</h3><div id="cohortWrap"></div></div>
+        <div class="card"><h3>Cihaz / IP paylaşım risk kümeleri | 设备 / IP 共享风险簇</h3>
+          <div class="notice">Shared IP veya shared device tek başına suç değildir. Ama toplu risk sinyalidir. | 共享 IP 或共享设备本身不等于违规，但属于群体风险信号。</div>
+          <div class="table-wrap"><table><thead><tr><th>Tür | 类型</th><th>Değer | 值</th><th>Kullanıcı sayısı | 用户数</th><th>Örnek kullanıcılar | 示例用户</th></tr></thead><tbody id="riskBody"></tbody></table></div>
+        </div>
+      </section>
+      <section class="grid2" style="margin-top:16px;">
+        <div class="card">
+          <h3>En yüksek ciro yapan kullanıcılar | 营收最高用户</h3>
+          <div class="table-wrap"><table><thead><tr><th>Kullanıcı | 用户</th><th>Toplam ciro | 总营收</th><th>İşlem | 订单数</th><th>Son ödeme | 最后支付</th><th>Baskın paket | 主导礼包</th></tr></thead><tbody id="topUsersBody"></tbody></table></div>
+        </div>
+        <div class="card">
+          <h3>Ürün tipi kullanıcı özeti | 产品类型用户摘要</h3>
+          <div class="table-wrap"><table><thead><tr><th>Grup | 分组</th><th>Kullanıcı | 用户</th><th>Ciro | 营收</th><th>İşlem | 订单</th><th>Ortalama sipariş | 平均订单</th><th>Son ödeme ort. gün | 平均距今天数</th></tr></thead><tbody id="typeUserSummaryBody"></tbody></table></div>
+        </div>
+      </section>
+      <div class="footer-note">Not: Analiz yalnızca ödeme verisine dayanır. Oyun içi masa, rakip, transfer veya oda davranışı bu dosyadan çıkarılamaz. | 注意：分析仅基于支付数据，无法从该文件推出游戏桌、对手、转账或房间行为。</div>
+    </div>
+  </details>
 </main>
 
 <script>
-const SAMPLE_PATH = "订单列表-2026_03_13 15_51_32.csv";
-let rawRows = [];
-let normalized = [];
-let analysis = null;
-let charts = {};
-
-const aliases = {
-  userId: ['显示ID','ID','Kullanıcı ID','账号ID'],
-  accountId: ['账号ID'],
-  yallaPayId: ['YallaPayID'],
-  packageName: ['商品名称','Ürün'],
-  packageType: ['商品类型','Tip'],
-  qty: ['商品数量','数量'],
-  amountUsd: ['商品价格','Fiyat','Miktar'],
-  amountTry: ['显示价格'],
-  orderedAt: ['下单时间','Tarih','Zaman'],
-  paidAt: ['支付时间'],
-  method: ['支付方式'],
-  channel: ['支付渠道'],
-  ip: ['充值IP'],
-  ipCountry: ['充值IP国家'],
-  accountCountry: ['国家'],
-  device: ['设备'],
-  orderId: ['订单号'],
-  externalOrderId: ['外部订单号'],
-  status: ['订单状态'],
-  paidStatus: ['PaidStatus'],
+const state = { rows: [], filteredType: 'all', analysis: null, charts: {} };
+const fieldMap = {
+  orderId:['订单号','order_id'], extOrderId:['外部订单号'], app:['应用'], accountId:['账号ID'], displayId:['显示ID','ID','Kullanıcı ID'],
+  yallaPayId:['YallaPayID'], ip:['充值IP'], ipCountry:['充值IP国家'], country:['国家'], productName:['商品名称','Ürün','Paket'],
+  productType:['商品类型','Tip'], quantity:['商品数量'], price:['商品价格','Fiyat','Miktar'], priceCurrency:['商品价格货币'],
+  localPrice:['显示价格'], localCurrency:['显示价格货币'], orderTime:['下单时间','Tarih','Zaman'], payTime:['支付时间'],
+  orderStatus:['订单状态'], channel:['支付渠道'], method:['支付方式'], device:['设备'], paidStatus:['PaidStatus']
 };
-
-function pick(obj, keys) {
-  for (const k of keys) if (obj[k] !== undefined && obj[k] !== null && obj[k] !== '') return obj[k];
-  return null;
-}
-function fmtNum(n) { return new Intl.NumberFormat('tr-TR').format(n); }
-function fmtMoney(n) { return new Intl.NumberFormat('tr-TR', {style:'currency', currency:'USD', maximumFractionDigits:2}).format(n || 0); }
-function fmtPct(n) { return (n||0).toFixed(1) + '%'; }
-function toDate(v) {
-  if (v instanceof Date) return v;
-  if (typeof v === 'number') return new Date((v - 25569) * 86400 * 1000);
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
-}
-function dayKey(d) { return d.toISOString().slice(0,10); }
-function weekKey(d) {
-  const x = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = x.getUTCDay() || 7;
-  x.setUTCDate(x.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(x.getUTCFullYear(),0,1));
-  const weekNo = Math.ceil((((x - yearStart) / 86400000) + 1) / 7);
-  return `${x.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
-}
-function median(arr) {
-  if (!arr.length) return 0;
-  const a=[...arr].sort((x,y)=>x-y); const m=Math.floor(a.length/2);
-  return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
-}
-function quantile(arr, q) {
-  if (!arr.length) return 0;
-  const a=[...arr].sort((x,y)=>x-y);
-  const pos=(a.length-1)*q; const base=Math.floor(pos); const rest=pos-base;
-  return a[base+1]!==undefined ? a[base] + rest*(a[base+1]-a[base]) : a[base];
-}
-function groupBy(rows, keyFn) {
-  const m = new Map();
-  for (const r of rows) {
-    const k = keyFn(r);
-    if (!m.has(k)) m.set(k, []);
-    m.get(k).push(r);
+const el = id => document.getElementById(id);
+const fmtNum = n => Number(n||0).toLocaleString('tr-TR');
+const fmtMoney = n => '$' + Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtDate = d => !d ? '-' : new Date(d).toLocaleDateString('tr-TR');
+const sum = arr => arr.reduce((a,b)=>a+Number(b||0),0);
+function setStatus(text, isBad=false){ const s=el('statusText'); s.textContent=text; s.className='status'+(isBad?' bad':''); }
+function pick(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && String(row[k]).trim()!=='') return row[k]; } return null; }
+function parseDate(v){
+  if (v == null || v === '') return null;
+  if (v instanceof Date && !isNaN(v)) return v;
+  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400 * 1000));
+  const s = String(v).trim().replace('T',' ').slice(0,16);
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) {
+    const [d,t] = s.split(' '), [y,m,da] = d.split('-').map(Number), [h,mi] = t.split(':').map(Number);
+    return new Date(y,m-1,da,h,mi);
   }
-  return m;
+  const d = new Date(s); return isNaN(d) ? null : d;
 }
-function sum(arr, fn = x => x) { return arr.reduce((a,b)=>a+fn(b),0); }
-function uniqueCount(arr, fn = x => x) { return new Set(arr.map(fn)).size; }
-function destroyChart(id) { if (charts[id]) charts[id].destroy(); }
-
-async function loadSample() {
-  const res = await fetch(SAMPLE_PATH);
-  const text = await res.text();
-  const wb = XLSX.read(text, {type:'string'});
-  const sheet = wb.Sheets[wb.SheetNames[0]];
-  rawRows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-  runAll();
+function getWeekKey(date){
+  const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate()+4-(d.getDay()||7));
+  const yearStart = new Date(d.getFullYear(),0,1); const week = Math.ceil((((d-yearStart)/86400000)+1)/7);
+  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
 }
-
-function parseRows(rows) {
-  return rows.map((r, idx) => {
-    const paidAt = toDate(pick(r, aliases.paidAt));
-    const orderedAt = toDate(pick(r, aliases.orderedAt));
-    const amountUsd = Number(pick(r, aliases.amountUsd)) || 0;
-    const amountTry = Number(pick(r, aliases.amountTry)) || 0;
-    const qty = Number(pick(r, aliases.qty)) || 0;
-    return {
-      _row: idx + 2,
-      userId: String(pick(r, aliases.userId) ?? '').trim(),
-      accountId: String(pick(r, aliases.accountId) ?? '').trim(),
-      yallaPayId: String(pick(r, aliases.yallaPayId) ?? '').trim(),
-      packageName: String(pick(r, aliases.packageName) ?? '').trim(),
-      packageType: String(pick(r, aliases.packageType) ?? '').trim(),
-      qty,
-      amountUsd,
-      amountTry,
-      orderedAt,
-      paidAt,
-      method: String(pick(r, aliases.method) ?? '').trim(),
-      channel: String(pick(r, aliases.channel) ?? '').trim(),
-      ip: String(pick(r, aliases.ip) ?? '').trim(),
-      ipCountry: String(pick(r, aliases.ipCountry) ?? '').trim(),
-      accountCountry: String(pick(r, aliases.accountCountry) ?? '').trim(),
-      device: String(pick(r, aliases.device) ?? '').trim(),
-      orderId: String(pick(r, aliases.orderId) ?? '').trim(),
-      externalOrderId: String(pick(r, aliases.externalOrderId) ?? '').trim(),
-      status: String(pick(r, aliases.status) ?? '').trim(),
-      paidStatus: String(pick(r, aliases.paidStatus) ?? '').trim(),
-    };
-  }).filter(r => r.userId && r.packageName && r.amountUsd > 0 && r.paidAt);
+function getQuantile(values, q){
+  if (!values.length) return 0;
+  const a=[...values].sort((x,y)=>x-y), pos=(a.length-1)*q, base=Math.floor(pos), rest=pos-base;
+  return a[base+1] !== undefined ? a[base] + rest*(a[base+1]-a[base]) : a[base];
 }
-
-function countMap(arr) {
-  const out={};
-  arr.forEach(x => { out[x]=(out[x]||0)+1; });
+function classifyType(productType, productName){
+  const s = `${productType||''} ${productName||''}`.toLowerCase();
+  if (s.includes('gold') || s.includes('金币')) return 'gold';
+  if (s.includes('gems') || s.includes('宝石')) return 'gems';
+  return 'other';
+}
+function typeLabel(type){
+  return type==='gold' ? 'Gold | 金币' : type==='gems' ? 'Gems | 宝石' : 'Tümü | 全部';
+}
+function normalizeRows(raw){
+  const out=[];
+  for(const row of raw){
+    const rec={};
+    for(const [k,alts] of Object.entries(fieldMap)) rec[k]=pick(row,alts);
+    rec.displayId=String(rec.displayId || rec.accountId || '').trim();
+    rec.productName=String(rec.productName || '').trim();
+    rec.productType=String(rec.productType || '').trim() || 'Unknown';
+    rec.price=Number(rec.price || 0);
+    rec.quantity=Number(rec.quantity || 0) || 1;
+    rec.orderTime=parseDate(rec.orderTime);
+    rec.payTime=parseDate(rec.payTime);
+    rec.method=String(rec.method || 'Unknown').trim();
+    rec.channel=String(rec.channel || 'Unknown').trim();
+    rec.ip=String(rec.ip || '').trim();
+    rec.device=String(rec.device || '').trim();
+    rec.orderId=String(rec.orderId || '').trim();
+    if(!rec.displayId || !rec.productName || !rec.price || !rec.payTime) continue;
+    rec.typeClass = classifyType(rec.productType, rec.productName);
+    rec.day=rec.payTime.toISOString().slice(0,10);
+    rec.week=getWeekKey(rec.payTime);
+    rec.hour=rec.payTime.getHours();
+    rec.latencyMin=rec.orderTime ? Math.max(0, Math.round((rec.payTime-rec.orderTime)/60000)) : null;
+    out.push(rec);
+  }
   return out;
 }
-function aggregate(rows, keyFn, valFn) {
-  const out={};
-  rows.forEach(r => {
-    const k=keyFn(r); out[k]=(out[k]||0)+valFn(r);
-  });
-  return out;
-}
-function weekOffset(a, b) {
-  const [ya,wa] = a.split('-W').map(Number), [yb,wb] = b.split('-W').map(Number);
-  return (yb-ya)*52 + (wb-wa);
-}
+function byGroup(arr, fn){ return arr.reduce((m,x)=>{ const k=fn(x); (m[k]||(m[k]=[])).push(x); return m; }, {}); }
+function getRowsByType(type){ return type==='all' ? state.rows : state.rows.filter(r=>r.typeClass===type); }
+function analyze(rows, allRows, selectedType){
+  const allUsersSet = new Set(allRows.map(r=>r.displayId));
+  const totalAllRevenue = sum(allRows.map(r=>r.price));
+  const totalAllOrders = allRows.length;
 
-function buildAnalysis(rows) {
-  const quality = {};
-  quality.totalRows = rows.length;
-  quality.uniqueUsers = uniqueCount(rows, r => r.userId);
-  quality.uniqueOrders = uniqueCount(rows, r => r.orderId);
-  quality.uniqueExternalOrders = uniqueCount(rows, r => r.externalOrderId);
-  quality.duplicateOrderIds = rows.length - quality.uniqueOrders;
-  quality.duplicateExternalOrderIds = rows.length - quality.uniqueExternalOrders;
-  quality.missingDevice = rows.filter(r => !r.device).length;
-  quality.missingIp = rows.filter(r => !r.ip).length;
-  quality.missingMethod = rows.filter(r => !r.method).length;
-  quality.missingPackage = rows.filter(r => !r.packageName).length;
-  quality.negativeOrZeroAmounts = rows.filter(r => !(r.amountUsd > 0)).length;
+  const users = new Map(), packageMap = new Map(), daily = new Map(), methods = new Map();
+  const hours = Array(24).fill(0), latBuckets = {'0-1 dk | 0-1 分钟':0,'2-5 dk | 2-5 分钟':0,'6-15 dk | 6-15 分钟':0,'16-60 dk | 16-60 分钟':0,'60+ dk | 60+ 分钟':0}, weeks = new Set();
+  const typeDaily = { gold:new Map(), gems:new Map() };
+  const typeStats = {
+    gold:{orders:0,revenue:0,users:new Set()},
+    gems:{orders:0,revenue:0,users:new Set()}
+  };
 
-  const latencies = rows.filter(r => r.orderedAt && r.paidAt).map(r => Math.max(0, (r.paidAt - r.orderedAt) / 60000));
-  quality.medianLatencyMin = median(latencies);
-  quality.p95LatencyMin = quantile(latencies, .95);
-  quality.maxLatencyMin = Math.max(...latencies, 0);
-
-  const usersMap = new Map();
-  for (const r of rows) {
-    if (!usersMap.has(r.userId)) usersMap.set(r.userId, []);
-    usersMap.get(r.userId).push(r);
-  }
-
-  const pkgPriceMap = new Map();
-  for (const [pkg, arr] of groupBy(rows, r=>r.packageName)) {
-    pkgPriceMap.set(pkg, median(arr.map(x=>x.amountUsd)));
-  }
-  const uniquePkgPrices = [...new Set([...pkgPriceMap.values()])].sort((a,b)=>a-b);
-  const highTierPriceThreshold = quantile(uniquePkgPrices, .75);
-  const highTierPackages = [...pkgPriceMap.entries()].filter(([k,v]) => v >= highTierPriceThreshold).map(([k]) => k);
-
-  const userStats = [];
-  for (const [userId, txs0] of usersMap) {
-    const txs = [...txs0].sort((a,b)=>a.paidAt - b.paidAt);
-    const totalUsd = sum(txs, t=>t.amountUsd);
-    const totalTry = sum(txs, t=>t.amountTry);
-    const firstPaid = txs[0].paidAt;
-    const lastPaid = txs[txs.length-1].paidAt;
-    const recent30 = txs.filter(t => (lastPaid - t.paidAt) / 86400000 <= 30);
-    const prev30 = txs.filter(t => {
-      const d = (lastPaid - t.paidAt) / 86400000;
-      return d > 30 && d <= 60;
-    });
-    const packageCounts = Object.entries(countMap(txs.map(t=>t.packageName))).sort((a,b)=>b[1]-a[1]);
-    const dominantPackage = packageCounts[0]?.[0] || '';
-    const dominantPackageTx = packageCounts[0]?.[1] || 0;
-    const dominantRatio = txs.length ? dominantPackageTx / txs.length : 0;
-    const highTierTxs = txs.filter(t => highTierPackages.includes(t.packageName));
-    const methods = countMap(txs.map(t=>t.method));
-    const methodPref = Object.entries(methods).sort((a,b)=>b[1]-a[1])[0]?.[0] || '';
-    const daysSpan = Math.max(1, Math.ceil((lastPaid - firstPaid)/86400000) + 1);
-    const txPer30 = txs.length / (daysSpan/30);
-    const recentVol = sum(recent30, t=>t.amountUsd);
-    const prevVol = sum(prev30, t=>t.amountUsd);
-    const trendPct = prevVol > 0 ? ((recentVol - prevVol)/prevVol)*100 : (recentVol > 0 ? 100 : 0);
-    const daysSinceLast = Math.floor((new Date() - lastPaid)/86400000);
-    const riskReasons = [];
-    let risk = 0;
-    if (daysSinceLast > 30) { risk += 30; riskReasons.push('30+ gündür sessiz'); }
-    else if (daysSinceLast > 14) { risk += 18; riskReasons.push('14+ gündür sessiz'); }
-    if (trendPct < -40 && prevVol > 50) { risk += 22; riskReasons.push('hacim sert düştü'); }
-    if (dominantRatio >= .9 && pkgPriceMap.get(dominantPackage) < highTierPriceThreshold/2) { risk += 8; riskReasons.push('küçük tek pakete kilitli'); }
-    if (highTierTxs.length > 0 && recentVol === 0) { risk += 15; riskReasons.push('high-tier kullanıcı zayıfladı'); }
-    if (uniqueCount(txs, t=>t.device) >= 4) { risk += 10; riskReasons.push('çok cihaz değişimi'); }
-    if (uniqueCount(txs, t=>t.ip) >= 6) { risk += 10; riskReasons.push('çok IP değişimi'); }
-    risk = Math.min(100, risk);
-
-    let loyaltyBand = 'Karışık';
-    if (dominantRatio === 1) loyaltyBand = '%100 tek paket';
-    else if (dominantRatio >= .8) loyaltyBand = '%80+ sadık';
-    else if (dominantRatio >= .6) loyaltyBand = '%60+ baskın';
-    let segment = 'Dengeli';
-    if (risk >= 60) segment = 'Riskli';
-    else if (highTierTxs.length >= 3) segment = 'High-tier';
-    else if (dominantRatio >= .8) segment = 'Paket sadık';
-    else if (txs.length === 1) segment = 'Tek seferlik';
-
-    let action = 'İzle';
-    if (risk >= 60) action = 'Kişisel geri kazanım';
-    else if (highTierTxs.length >= 2 && trendPct < 0) action = 'VIP temas';
-    else if (dominantRatio >= .8 && !highTierPackages.includes(dominantPackage)) action = 'Akıllı upsell';
-    else if (txs.length === 1) action = 'İkinci yükleme tetikle';
-
-    userStats.push({
-      userId, totalUsd, totalTry, txCount: txs.length, firstPaid, lastPaid, daysSinceLast, txPer30,
-      recentVol, prevVol, trendPct, dominantPackage, dominantRatio, loyaltyBand,
-      highTierTxCount: highTierTxs.length, highTierUsd: sum(highTierTxs, t=>t.amountUsd),
-      methodPref, risk, riskReasons, segment, action,
-      uniqueDevices: uniqueCount(txs, t=>t.device), uniqueIps: uniqueCount(txs, t=>t.ip),
-      packageMix: packageCounts, methods,
-    });
-  }
-
-  const recencies = userStats.map(u=>u.daysSinceLast);
-  const freqs = userStats.map(u=>u.txCount);
-  const monies = userStats.map(u=>u.totalUsd);
-  userStats.forEach(u => {
-    u.rfm = {
-      r: u.daysSinceLast <= quantile(recencies,.2) ? 5 : u.daysSinceLast <= quantile(recencies,.4) ? 4 : u.daysSinceLast <= quantile(recencies,.6) ? 3 : u.daysSinceLast <= quantile(recencies,.8) ? 2 : 1,
-      f: u.txCount >= quantile(freqs,.8) ? 5 : u.txCount >= quantile(freqs,.6) ? 4 : u.txCount >= quantile(freqs,.4) ? 3 : u.txCount >= quantile(freqs,.2) ? 2 : 1,
-      m: u.totalUsd >= quantile(monies,.8) ? 5 : u.totalUsd >= quantile(monies,.6) ? 4 : u.totalUsd >= quantile(monies,.4) ? 3 : u.totalUsd >= quantile(monies,.2) ? 2 : 1,
-    };
-  });
-
-  const dailyMap = new Map();
-  const weeklyMap = new Map();
-  for (const r of rows) {
-    const d = dayKey(r.paidAt), w = weekKey(r.paidAt);
-    if (!dailyMap.has(d)) dailyMap.set(d, {day:d, revenue:0, count:0, qty:0});
-    if (!weeklyMap.has(w)) weeklyMap.set(w, {week:w, revenue:0, count:0, qty:0});
-    const da = dailyMap.get(d), wa = weeklyMap.get(w);
-    da.revenue += r.amountUsd; da.count += 1; da.qty += (r.qty || 1);
-    wa.revenue += r.amountUsd; wa.count += 1; wa.qty += (r.qty || 1);
-  }
-  const dailySeries = [...dailyMap.values()].sort((a,b)=>a.day.localeCompare(b.day));
-  const weeklySeries = [...weeklyMap.values()].sort((a,b)=>a.week.localeCompare(b.week));
-
-  const packageStats = [];
-  const packageGroups = groupBy(rows, r=>r.packageName);
-  for (const [pkg, arr] of packageGroups) {
-    const days = groupBy(arr, r=>dayKey(r.paidAt));
-    const weeks = groupBy(arr, r=>weekKey(r.paidAt));
-    const revenue = sum(arr, r=>r.amountUsd);
-    const count = arr.length;
-    const qty = sum(arr, r=>r.qty || 1);
-    const users = uniqueCount(arr, r=>r.userId);
-    const medianPrice = median(arr.map(x=>x.amountUsd));
-    const last30 = arr.filter(r => (new Date() - r.paidAt)/86400000 <= 30);
-    const prev30p = arr.filter(r => {
-      const d = (new Date() - r.paidAt)/86400000;
-      return d > 30 && d <= 60;
-    });
-    const last30Revenue = sum(last30, r=>r.amountUsd);
-    const prev30Revenue = sum(prev30p, r=>r.amountUsd);
-    const trendPct = prev30Revenue > 0 ? ((last30Revenue - prev30Revenue)/prev30Revenue)*100 : (last30Revenue > 0 ? 100 : 0);
-    packageStats.push({
-      packageName: pkg,
-      packageType: arr[0].packageType,
-      medianPrice,
-      orderCount: count,
-      qty,
-      revenue,
-      users,
-      trendPct,
-      daySeries: [...days.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>({key:k,count:v.length,qty:sum(v,x=>x.qty||1),revenue:sum(v,x=>x.amountUsd)})),
-      weekSeries: [...weeks.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>({key:k,count:v.length,qty:sum(v,x=>x.qty||1),revenue:sum(v,x=>x.amountUsd)}))
-    });
-  }
-  packageStats.sort((a,b)=>b.revenue-a.revenue);
-  const topPackages = packageStats.slice(0, 8).map(p=>p.packageName);
-
-  const cohortUsers = {};
-  rows.forEach(r => {
-    if (!cohortUsers[r.userId]) cohortUsers[r.userId] = {firstWeek: weekKey(r.paidAt), weeks:new Set()};
-    cohortUsers[r.userId].weeks.add(weekKey(r.paidAt));
-  });
-  const cohortBase = {}, cohortActive = {};
-  Object.values(cohortUsers).forEach(u => {
-    cohortBase[u.firstWeek] = (cohortBase[u.firstWeek]||0)+1;
-    [...u.weeks].forEach(w => {
-      const offset = weekOffset(u.firstWeek, w);
-      if (offset >= 0) {
-        const key = `${u.firstWeek}|${offset}`;
-        cohortActive[key] = (cohortActive[key]||0)+1;
-      }
-    });
-  });
-  const cohortWeeks = [...Object.keys(cohortBase)].sort();
-  const cohortMatrix = cohortWeeks.map(cw => {
-    const row = {cohortWeek:cw, size:cohortBase[cw], values:[]};
-    for (let off=0; off<12; off++) {
-      const active = cohortActive[`${cw}|${off}`] || 0;
-      row.values.push(row.size ? (active/row.size)*100 : 0);
+  for (const r of allRows){
+    if (r.typeClass==='gold' || r.typeClass==='gems'){
+      typeStats[r.typeClass].orders += 1;
+      typeStats[r.typeClass].revenue += r.price;
+      typeStats[r.typeClass].users.add(r.displayId);
+      if (!typeDaily[r.typeClass].has(r.day)) typeDaily[r.typeClass].set(r.day,{day:r.day,orders:0,revenue:0});
+      typeDaily[r.typeClass].get(r.day).orders += 1;
+      typeDaily[r.typeClass].get(r.day).revenue += r.price;
     }
+  }
+
+  for (const r of rows){
+    weeks.add(r.week);
+    if (!users.has(r.displayId)) users.set(r.displayId,{id:r.displayId,rows:[],totalRev:0,orders:0,productCounts:new Map(),weeks:new Map(),devices:new Set(),ips:new Set(),lastPay:null,firstPay:null});
+    const u = users.get(r.displayId);
+    u.rows.push(r); u.totalRev += r.price; u.orders += 1; u.devices.add(r.device); u.ips.add(r.ip);
+    u.lastPay = !u.lastPay || r.payTime > u.lastPay ? r.payTime : u.lastPay;
+    u.firstPay = !u.firstPay || r.payTime < u.firstPay ? r.payTime : u.firstPay;
+    u.productCounts.set(r.productName,(u.productCounts.get(r.productName)||0)+1);
+    if (!u.weeks.has(r.week)) u.weeks.set(r.week,new Map());
+    u.weeks.get(r.week).set(r.productName,(u.weeks.get(r.week).get(r.productName)||0)+1);
+
+    if (!packageMap.has(r.productName)) packageMap.set(r.productName,{name:r.productName,qty:0,rev:0,users:new Set(),prices:[],dailyQty:new Map(),dailyRev:new Map(),weeklyQty:new Map()});
+    const p = packageMap.get(r.productName);
+    p.qty += 1; p.rev += r.price; p.users.add(r.displayId); p.prices.push(r.price);
+    p.dailyQty.set(r.day,(p.dailyQty.get(r.day)||0)+1);
+    p.dailyRev.set(r.day,(p.dailyRev.get(r.day)||0)+r.price);
+    p.weeklyQty.set(r.week,(p.weeklyQty.get(r.week)||0)+1);
+
+    if (!daily.has(r.day)) daily.set(r.day,{day:r.day,rev:0,orders:0});
+    daily.get(r.day).rev += r.price; daily.get(r.day).orders += 1;
+    methods.set(r.method, (methods.get(r.method)||0)+r.price);
+    hours[r.hour] += 1;
+    const lb = r.latencyMin==null ? null : r.latencyMin <=1 ? '0-1 dk | 0-1 分钟' : r.latencyMin <=5 ? '2-5 dk | 2-5 分钟' : r.latencyMin <=15 ? '6-15 dk | 6-15 分钟' : r.latencyMin <=60 ? '16-60 dk | 16-60 分钟' : '60+ dk | 60+ 分钟';
+    if (lb) latBuckets[lb] += 1;
+  }
+
+  const packages = [...packageMap.values()].map(p=>({
+    name:p.name, qty:p.qty, rev:p.rev, users:p.users, avgPrice:p.prices.length ? sum(p.prices)/p.prices.length : 0,
+    dailyQtyObj:Object.fromEntries(p.dailyQty), dailyRevObj:Object.fromEntries(p.dailyRev), weeklyQtyObj:Object.fromEntries(p.weeklyQty)
+  })).sort((a,b)=>b.rev-a.rev);
+
+  const highThreshold = getQuantile(packages.map(p=>p.avgPrice), 0.8);
+  packages.forEach(p=> p.isHighTier = p.avgPrice >= highThreshold);
+  const highPackageNames = new Set(packages.filter(p=>p.isHighTier).map(p=>p.name));
+
+  const userStats = [...users.values()].map(u=>{
+    const topPkgEntry=[...u.productCounts.entries()].sort((a,b)=>b[1]-a[1])[0] || ['-',0];
+    const dominantRatio=u.orders ? topPkgEntry[1]/u.orders : 0;
+    const loyalBand = dominantRatio === 1 ? 'Tam tek paket | 完全单礼包' : dominantRatio >= .8 ? 'Yüksek sadakat | 高忠诚' : dominantRatio >= .6 ? 'Baskın paketli | 主导礼包' : 'Karışık | 混合';
+    const highRows=u.rows.filter(r=>highPackageNames.has(r.productName));
+    const highAgg={}; highRows.forEach(r=>{ highAgg[r.productName]=(highAgg[r.productName]||0)+1; });
+    const topHigh=Object.entries(highAgg).sort((a,b)=>b[1]-a[1])[0]?.[0] || '-';
+    const dominantTypeCounts={gold:0,gems:0,other:0}; u.rows.forEach(r=>dominantTypeCounts[r.typeClass]=(dominantTypeCounts[r.typeClass]||0)+1);
+    let dominantType='mixed';
+    const maxType = Object.entries(dominantTypeCounts).sort((a,b)=>b[1]-a[1])[0];
+    if (maxType && maxType[1]===u.rows.length && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
+    else if (maxType && maxType[1]/u.rows.length>=0.6 && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
+    return {id:u.id,totalRev:u.totalRev,orders:u.orders,dominantPackage:topPkgEntry[0],dominantRatio,loyalBand,lastPay:u.lastPay,firstPay:u.firstPay,devices:u.devices.size,ips:u.ips.size,weeks:u.weeks,rows:u.rows,highRows,highCount:highRows.length,highRev:sum(highRows.map(r=>r.price)),topHigh,dominantType};
+  }).sort((a,b)=>b.totalRev-a.totalRev);
+
+  const loyalUsers = userStats.filter(u=>u.dominantRatio>=0.8).sort((a,b)=>b.dominantRatio-a.dominantRatio || b.totalRev-a.totalRev).slice(0,100);
+  const highUsers = userStats.filter(u=>u.highCount>0).sort((a,b)=>b.highRev-a.highRev);
+  const weeklyList=[...weeks].sort();
+  const userById=Object.fromEntries(userStats.map(u=>[u.id,u]));
+
+  const firstWeekUsers={};
+  for(const u of userStats){
+    const fw=getWeekKey(u.firstPay);
+    if(!firstWeekUsers[fw]) firstWeekUsers[fw]=new Set();
+    firstWeekUsers[fw].add(u.id);
+  }
+  const cohort=Object.entries(firstWeekUsers).sort((a,b)=>a[0].localeCompare(b[0])).slice(-10).map(([week,ids])=>{
+    const row={cohort:week,size:ids.size,values:[]}; const idArr=[...ids];
+    weeklyList.forEach(wk=>{ if(wk<week) return; const active=idArr.filter(id=>userById[id].rows.some(r=>r.week===wk)).length; row.values.push({week:wk,pct: ids.size ? Math.round(active/ids.size*100) : 0}); });
     return row;
   });
 
-  const methodStats = Object.entries(aggregate(rows, r=>r.method, r=>r.amountUsd)).map(([k,v])=>({key:k, value:v})).sort((a,b)=>b.value-a.value);
-  const countryStats = Object.entries(countMap(rows.map(r=>r.ipCountry))).map(([k,v])=>({key:k, value:v})).sort((a,b)=>b.value-a.value).slice(0,10);
+  const deviceGroups = byGroup(rows.filter(r=>r.device), r=>`DEVICE|${r.device}`);
+  const ipGroups = byGroup(rows.filter(r=>r.ip), r=>`IP|${r.ip}`);
+  const riskRows=[];
+  for (const [k,arr] of Object.entries(deviceGroups)){ const ids=[...new Set(arr.map(r=>r.displayId))]; if(ids.length>=3) riskRows.push({type:'Device | 设备', value:k.split('|')[1], count:ids.length, sample:ids.slice(0,6).join(', ')}); }
+  for (const [k,arr] of Object.entries(ipGroups)){ const ids=[...new Set(arr.map(r=>r.displayId))]; if(ids.length>=4) riskRows.push({type:'IP | IP', value:k.split('|')[1], count:ids.length, sample:ids.slice(0,6).join(', ')}); }
+  riskRows.sort((a,b)=>b.count-a.count);
 
-  const deviceGroups = [...groupBy(rows, r=>r.device).entries()].map(([device, arr]) => {
-    const users = [...new Set(arr.map(x=>x.userId))];
-    return {device, userCount:users.length, txCount:arr.length, revenue:sum(arr,x=>x.amountUsd), users:users.slice(0,8)};
-  }).filter(x=>x.device && x.userCount >= 3).sort((a,b)=>b.userCount-a.userCount || b.txCount-a.txCount).slice(0,40);
+  const selectedUsers = new Set(rows.map(r=>r.displayId));
+  const orderShare = totalAllOrders ? rows.length / totalAllOrders * 100 : 0;
+  const revenueShare = totalAllRevenue ? sum(rows.map(r=>r.price)) / totalAllRevenue * 100 : 0;
+  const userPenetration = allUsersSet.size ? selectedUsers.size / allUsersSet.size * 100 : 0;
 
-  const ipGroups = [...groupBy(rows, r=>r.ip).entries()].map(([ip, arr]) => {
-    const users = [...new Set(arr.map(x=>x.userId))];
-    return {ip, userCount:users.length, txCount:arr.length, revenue:sum(arr,x=>x.amountUsd), country:arr[0]?.ipCountry||'', users:users.slice(0,8)};
-  }).filter(x=>x.ip && x.userCount >= 4).sort((a,b)=>b.userCount-a.userCount || b.txCount-a.txCount).slice(0,40);
-
-  const sortedUsers = [...userStats].sort((a,b)=>b.totalUsd-a.totalUsd);
-  let cum = 0;
-  const totalRevenue = sum(sortedUsers, u=>u.totalUsd);
-  const pareto = sortedUsers.map((u,idx) => {
-    cum += u.totalUsd;
-    return {pctUsers: ((idx+1)/sortedUsers.length)*100, pctRevenue: totalRevenue ? (cum/totalRevenue)*100 : 0};
-  });
-
-  const alerts = [];
-  const risky = userStats.filter(u=>u.risk>=60);
-  if (risky.length) alerts.push({cls:'bad', text:`${risky.length} kullanıcı yüksek risk bandında. Bunları genel kampanyaya atmak tembelliktir. Kişisel dokunuş gerek.`});
-  const highTierAtRisk = userStats.filter(u=>u.highTierTxCount>0 && u.risk>=50);
-  if (highTierAtRisk.length) alerts.push({cls:'warn', text:`${highTierAtRisk.length} high-tier kullanıcı zayıflıyor. VIP gelir omurganı gevşetme.`});
-  const loyalLow = userStats.filter(u=>u.dominantRatio>=.8 && !highTierPackages.includes(u.dominantPackage)).length;
-  if (loyalLow) alerts.push({cls:'good', text:`${loyalLow} kullanıcı tek pakete sadık. Bunların bir kısmı istikrarlı nakit akışı, bir kısmı ise net upsell adayı.`});
-  if (quality.p95LatencyMin > 4) alerts.push({cls:'warn', text:`Ödeme gecikmesi p95 = ${quality.p95LatencyMin.toFixed(1)} dk. Kanal ya da yöntem bazlı sürtünme kontrol edilmeli.`});
-  const sharedHeavyDevices = deviceGroups.filter(x=>x.userCount>=5).length;
-  if (sharedHeavyDevices) alerts.push({cls:'warn', text:`${sharedHeavyDevices} cihaz 5+ kullanıcı tarafından paylaşılmış görünüyor. Bu kanıt değil, ama iyi bir inceleme kuyruğu.`});
-
-  return {
-    quality, userStats, packageStats, topPackages, highTierPackages, highTierPriceThreshold,
-    dailySeries, weeklySeries, cohortMatrix, methodStats, countryStats, deviceGroups, ipGroups, pareto, alerts,
-    totalRevenue, totalUsers:userStats.length, totalOrders:rows.length,
-    totalQty: sum(rows, r=>r.qty||1),
-    avgOrder: totalRevenue / rows.length,
-    repeatUsers: userStats.filter(u=>u.txCount>=2).length,
-    repeatRate: userStats.length ? (userStats.filter(u=>u.txCount>=2).length / userStats.length)*100 : 0,
-    highTierUserStats: userStats.filter(u=>u.highTierTxCount>0).sort((a,b)=>b.highTierUsd-a.highTierUsd || b.totalUsd-a.totalUsd),
-  };
-}
-
-function render() {
-  document.getElementById('dashboard').classList.remove('hidden');
-  renderKpis(); renderQuality(); renderCharts(); renderCohort(); renderPackageSection();
-  renderLoyalty(); renderHighTier(); renderRiskTables(); renderUserTable();
-}
-
-function renderKpis() {
-  const a = analysis;
-  const kpis = [
-    ['Toplam sipariş', fmtNum(a.totalOrders), `Tekil kullanıcı: ${fmtNum(a.totalUsers)}`],
-    ['Toplam gelir', fmtMoney(a.totalRevenue), `Ortalama sipariş: ${fmtMoney(a.avgOrder)}`],
-    ['Toplam miktar', fmtNum(a.totalQty), `Tekrar yükleme oranı: ${fmtPct(a.repeatRate)}`],
-    ['High-tier paket eşiği', fmtMoney(a.highTierPriceThreshold), `${a.highTierPackages.length} paket high-tier sınıfında`],
-    ['High-tier kullanıcı', fmtNum(a.highTierUserStats.length), `Gelirde payı: ${fmtPct(sum(a.highTierUserStats, u=>u.highTierUsd)/a.totalRevenue*100)}`],
-    ['Yüksek risk kullanıcı', fmtNum(a.userStats.filter(u=>u.risk>=60).length), `Risk bandı 60+`],
-  ];
-  document.getElementById('kpiGrid').innerHTML = kpis.map(([l,v,s])=>`<div class="panel kpi"><div class="label">${l}</div><div class="value">${v}</div><div class="small">${s}</div></div>`).join('');
-}
-
-function renderQuality() {
-  const q = analysis.quality;
-  document.getElementById('alertList').innerHTML = analysis.alerts.map(x=>`<div class="alert ${x.cls}">${x.text}</div>`).join('');
-  const rows = [
-    ['Toplam satır', q.totalRows], ['Tekil kullanıcı', q.uniqueUsers], ['Tekil sipariş', q.uniqueOrders],
-    ['Duplicate 订单号', q.duplicateOrderIds], ['Duplicate 外部订单号', q.duplicateExternalOrderIds],
-    ['Eksik cihaz', q.missingDevice], ['Eksik IP', q.missingIp], ['Eksik yöntem', q.missingMethod],
-    ['Medyan ödeme gecikmesi (dk)', q.medianLatencyMin.toFixed(1)],
-    ['P95 ödeme gecikmesi (dk)', q.p95LatencyMin.toFixed(1)],
-    ['Maks ödeme gecikmesi (dk)', q.maxLatencyMin.toFixed(1)],
-  ];
-  document.getElementById('qualityTable').innerHTML = `<thead><tr><th>Kalem</th><th>Değer</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</tbody>`;
-}
-
-function baseChartOptions(dual=false) {
-  return {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{ legend:{labels:{color:'#edf3ff'}} },
-    scales: dual ? {
-      x:{ticks:{color:'#93a4c2', maxTicksLimit:10}, grid:{color:'rgba(255,255,255,.04)'}},
-      y:{ticks:{color:'#93a4c2'}, grid:{color:'rgba(255,255,255,.04)'}},
-      y1:{position:'right', ticks:{color:'#93a4c2'}, grid:{drawOnChartArea:false}}
-    } : {
-      x:{ticks:{color:'#93a4c2', maxTicksLimit:10}, grid:{color:'rgba(255,255,255,.04)'}},
-      y:{ticks:{color:'#93a4c2'}, grid:{color:'rgba(255,255,255,.04)'}}
-    }
-  };
-}
-
-function renderCharts() {
-  const ds = analysis.dailySeries;
-  destroyChart('dailyRevenueChart');
-  charts.dailyRevenueChart = new Chart(document.getElementById('dailyRevenueChart'), {
-    type:'line',
-    data:{ labels: ds.map(x=>x.day), datasets:[
-      {label:'Günlük gelir (USD)', data: ds.map(x=>x.revenue), borderColor:'#14c7ff', backgroundColor:'rgba(20,199,255,.12)', fill:true, tension:.25},
-      {label:'Sipariş adedi', data: ds.map(x=>x.count), borderColor:'#ffc400', yAxisID:'y1', tension:.25}
-    ]},
-    options: baseChartOptions(true)
-  });
-
-  const hours = Array.from({length:24}, (_,i)=>i);
-  const hr = hours.map(h => normalized.filter(r=>r.paidAt.getHours()===h));
-  destroyChart('hourlyChart');
-  charts.hourlyChart = new Chart(document.getElementById('hourlyChart'), {
-    type:'bar',
-    data:{ labels: hours.map(h=>String(h).padStart(2,'0')+':00'), datasets:[{label:'Sipariş', data: hr.map(x=>x.length), backgroundColor:'#14c7ff'}]},
-    options: baseChartOptions()
-  });
-
-  const lat = normalized.map(r=>Math.max(0,(r.paidAt-r.orderedAt)/60000));
-  const buckets = ['0-1','1-2','2-5','5-10','10+'];
-  const counts = [0,0,0,0,0];
-  lat.forEach(x=>{ if(x<=1) counts[0]++; else if(x<=2) counts[1]++; else if(x<=5) counts[2]++; else if(x<=10) counts[3]++; else counts[4]++; });
-  destroyChart('latencyChart');
-  charts.latencyChart = new Chart(document.getElementById('latencyChart'), {
-    type:'bar',
-    data:{ labels:buckets, datasets:[{label:'Ödeme gecikmesi dağılımı', data:counts, backgroundColor:'#ffc400'}]},
-    options: baseChartOptions()
-  });
-
-  destroyChart('methodRevenueChart');
-  charts.methodRevenueChart = new Chart(document.getElementById('methodRevenueChart'), {
-    type:'bar',
-    data:{ labels:analysis.methodStats.map(x=>x.key), datasets:[{label:'Gelir', data:analysis.methodStats.map(x=>x.value), backgroundColor:['#14c7ff','#ffc400','#8f7cff','#21d4a7']}]},
-    options: baseChartOptions()
-  });
-
-  destroyChart('countryChart');
-  charts.countryChart = new Chart(document.getElementById('countryChart'), {
-    type:'bar',
-    data:{ labels:analysis.countryStats.map(x=>x.key), datasets:[{label:'İşlem adedi', data:analysis.countryStats.map(x=>x.value), backgroundColor:'#8f7cff'}]},
-    options: baseChartOptions()
-  });
-
-  destroyChart('paretoChart');
-  charts.paretoChart = new Chart(document.getElementById('paretoChart'), {
-    type:'line',
-    data:{ labels:analysis.pareto.map(x=>x.pctUsers.toFixed(1)), datasets:[{label:'Kümülatif gelir %', data:analysis.pareto.map(x=>x.pctRevenue), borderColor:'#14c7ff', tension:.1}]},
-    options: {
-      ...baseChartOptions(),
-      scales:{
-        x:{ticks:{color:'#93a4c2'}, grid:{color:'rgba(255,255,255,.04)'}, title:{display:true,text:'Kullanıcı yüzdesi',color:'#93a4c2'}},
-        y:{ticks:{color:'#93a4c2', callback:v=>v+'%'}, min:0, max:100, grid:{color:'rgba(255,255,255,.04)'}, title:{display:true,text:'Gelir yüzdesi',color:'#93a4c2'}}
-      }
-    }
-  });
-}
-
-function cohortColor(v) {
-  const alpha = Math.max(.08, Math.min(.9, v/100));
-  return `rgba(20,199,255,${alpha})`;
-}
-function renderCohort() {
-  const rows = analysis.cohortMatrix;
-  const head = `<thead><tr><th>Cohort</th><th>Büyüklük</th>${Array.from({length:12},(_,i)=>`<th>W${i}</th>`).join('')}</tr></thead>`;
-  const body = `<tbody>${rows.map(r=>`<tr><td>${r.cohortWeek}</td><td>${r.size}</td>${r.values.map(v=>`<td style="background:${cohortColor(v)}">${v.toFixed(0)}%</td>`).join('')}</tr>`).join('')}</tbody>`;
-  document.getElementById('cohortWrap').innerHTML = `<div class="note" style="margin-bottom:8px">Gerçek retention: kullanıcının ilk ödeme haftası cohort kabul edilir. Sonraki haftalarda tekrar ödeme yapan tekil kullanıcı oranı hesaplanır.</div><table>${head+body}</table>`;
-}
-
-function palette(i) {
-  return ['#14c7ff','#ffc400','#21d4a7','#8f7cff','#ff7d66','#5ad1ff','#a0e45d','#ff5d6c'][i % 8];
-}
-function renderPackageSection() {
-  const sel = document.getElementById('packageSelect');
-  const pkgs = analysis.packageStats.map(p=>p.packageName);
-  sel.innerHTML = pkgs.map(p=>`<option value="${p}">${p}</option>`).join('');
-  drawPackageOverview();
-  drawSelectedPackage();
-  document.getElementById('packageMetricSelect').onchange = drawSelectedPackage;
-  document.getElementById('timeGrainSelect').onchange = drawSelectedPackage;
-  document.getElementById('packageSelect').onchange = drawSelectedPackage;
-
-  const trendRows = analysis.packageStats.map(p => [
-    p.packageName, p.packageType, fmtMoney(p.medianPrice), fmtNum(p.orderCount), fmtNum(p.users), fmtMoney(p.revenue), (p.trendPct||0).toFixed(1)+'%'
-  ]);
-  document.getElementById('packageTrendTable').innerHTML =
-    `<thead><tr><th>Paket</th><th>Tip</th><th>Medyan fiyat</th><th>Sipariş</th><th>Kullanıcı</th><th>Gelir</th><th>30G trend</th></tr></thead>
-     <tbody>${trendRows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody>`;
-}
-function drawPackageOverview() {
-  const top = analysis.packageStats.slice(0,8);
-  const allDays = [...new Set(analysis.dailySeries.map(x=>x.day))];
-  destroyChart('packageDailyCountChart');
-  charts.packageDailyCountChart = new Chart(document.getElementById('packageDailyCountChart'), {
-    type:'bar',
-    data:{ labels:allDays, datasets: top.map((p,i)=>({
-      label:p.packageName,
-      data: allDays.map(d => (p.daySeries.find(x=>x.key===d)?.count || 0)),
-      backgroundColor: palette(i),
-      stack:'a'
-    })) },
-    options: {...baseChartOptions(), scales:{x:{stacked:true,ticks:{color:'#93a4c2', maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}}, y:{stacked:true,ticks:{color:'#93a4c2'},grid:{color:'rgba(255,255,255,.04)'}}}}
-  });
-  destroyChart('packageDailyRevenueChart');
-  charts.packageDailyRevenueChart = new Chart(document.getElementById('packageDailyRevenueChart'), {
-    type:'bar',
-    data:{ labels:allDays, datasets: top.map((p,i)=>({
-      label:p.packageName,
-      data: allDays.map(d => (p.daySeries.find(x=>x.key===d)?.revenue || 0)),
-      backgroundColor: palette(i),
-      stack:'a'
-    })) },
-    options: {...baseChartOptions(), scales:{x:{stacked:true,ticks:{color:'#93a4c2', maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}}, y:{stacked:true,ticks:{color:'#93a4c2'},grid:{color:'rgba(255,255,255,.04)'}}}}
-  });
-}
-function drawSelectedPackage() {
-  const pkg = analysis.packageStats.find(p=>p.packageName===document.getElementById('packageSelect').value) || analysis.packageStats[0];
-  if (!pkg) return;
-  const metric = document.getElementById('packageMetricSelect').value;
-  const grain = document.getElementById('timeGrainSelect').value;
-  const series = grain === 'day' ? pkg.daySeries : pkg.weekSeries;
-  destroyChart('selectedPackageChart');
-  charts.selectedPackageChart = new Chart(document.getElementById('selectedPackageChart'), {
-    type:'line',
-    data:{ labels:series.map(x=>x.key), datasets:[{ label:`${pkg.packageName} - ${metric==='count'?'adet':'ciro'}`, data:series.map(x=>x[metric]), borderColor:'#14c7ff', backgroundColor:'rgba(20,199,255,.12)', fill:true, tension:.25 }] },
-    options: baseChartOptions()
-  });
-}
-
-function renderLoyalty() {
-  const buckets = [
-    ['%100 tek paket', analysis.userStats.filter(u=>u.dominantRatio===1).length],
-    ['%80+ sadık', analysis.userStats.filter(u=>u.dominantRatio>=.8 && u.dominantRatio<1).length],
-    ['%60+ baskın', analysis.userStats.filter(u=>u.dominantRatio>=.6 && u.dominantRatio<.8).length],
-    ['Karışık', analysis.userStats.filter(u=>u.dominantRatio<.6).length]
-  ];
-  destroyChart('loyaltyDistChart');
-  charts.loyaltyDistChart = new Chart(document.getElementById('loyaltyDistChart'), {
-    type:'doughnut',
-    data:{ labels:buckets.map(x=>x[0]), datasets:[{ data:buckets.map(x=>x[1]), backgroundColor:['#14c7ff','#21d4a7','#ffc400','#8f7cff'] }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{color:'#edf3ff'}}}}
-  });
-  const topLoyal = analysis.userStats.filter(u=>u.dominantRatio>=.8).sort((a,b)=>b.dominantRatio-a.dominantRatio || b.txCount-a.txCount || b.totalUsd-a.totalUsd).slice(0,100);
-  document.getElementById('loyaltyTable').innerHTML = `<thead><tr><th>Kullanıcı</th><th>Baskın paket</th><th>Sadakat</th><th>İşlem</th><th>Gelir</th><th>Risk</th><th>Aksiyon</th></tr></thead>
-  <tbody>${topLoyal.map(u=>`<tr><td>${u.userId}</td><td>${u.dominantPackage}</td><td>${fmtPct(u.dominantRatio*100)}</td><td>${u.txCount}</td><td>${fmtMoney(u.totalUsd)}</td><td><span class="badge ${u.risk>=60?'bad':u.risk>=40?'warn':'good'}">${u.risk}</span></td><td>${u.action}</td></tr>`).join('')}</tbody>`;
-}
-
-function renderHighTier() {
-  const users = analysis.highTierUserStats;
-  document.getElementById('highTierUserSelect').innerHTML = users.slice(0,200).map(u=>`<option value="${u.userId}">${u.userId} | ${fmtMoney(u.highTierUsd)} | ${u.highTierTxCount} high-tier</option>`).join('');
-  document.getElementById('highTierUserSelect').onchange = drawHighTierUser;
-  document.getElementById('highTierUsersTable').innerHTML = `<thead><tr><th>Kullanıcı</th><th>High-tier gelir</th><th>High-tier işlem</th><th>Toplam gelir</th><th>Dominant paket</th><th>Trend</th><th>Risk</th></tr></thead>
-  <tbody>${users.slice(0,120).map(u=>`<tr><td>${u.userId}</td><td>${fmtMoney(u.highTierUsd)}</td><td>${u.highTierTxCount}</td><td>${fmtMoney(u.totalUsd)}</td><td>${u.dominantPackage}</td><td>${u.trendPct.toFixed(1)}%</td><td><span class="badge ${u.risk>=60?'bad':u.risk>=40?'warn':'good'}">${u.risk}</span></td></tr>`).join('')}</tbody>`;
-  drawHighTierUser();
-}
-function drawHighTierUser() {
-  const userId = document.getElementById('highTierUserSelect').value || analysis.highTierUserStats[0]?.userId;
-  const rows = normalized.filter(r=>r.userId===userId);
-  const weekly = groupBy(rows, r=>weekKey(r.paidAt));
-  const highPkgs = [...new Set(rows.filter(r=>analysis.highTierPackages.includes(r.packageName)).map(r=>r.packageName))];
-  const weeks = [...weekly.keys()].sort();
-  const datasets = highPkgs.map((pkg,i)=>({
-    label:pkg, backgroundColor:palette(i), data:weeks.map(w => weekly.get(w).filter(r=>r.packageName===pkg).length)
-  }));
-  destroyChart('highTierWeeklyChart');
-  charts.highTierWeeklyChart = new Chart(document.getElementById('highTierWeeklyChart'), {
-    type:'bar',
-    data:{ labels:weeks, datasets },
-    options:{...baseChartOptions(), scales:{x:{stacked:true,ticks:{color:'#93a4c2', maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}}, y:{stacked:true,ticks:{color:'#93a4c2'},grid:{color:'rgba(255,255,255,.04)'}}}}
-  });
-  const head = `<thead><tr><th>Hafta</th>${highPkgs.map(p=>`<th>${p}</th>`).join('')}<th>Toplam</th></tr></thead>`;
-  const body = `<tbody>${weeks.map(w=>{ const arr=weekly.get(w); return `<tr><td>${w}</td>${highPkgs.map(p=>`<td>${arr.filter(r=>r.packageName===p).length}</td>`).join('')}<td>${arr.length}</td></tr>`; }).join('')}</tbody>`;
-  document.getElementById('highTierWeeklyMatrix').innerHTML = `<caption style="caption-side:top;text-align:left;padding:8px 0;color:#93a4c2">Seçili kullanıcı: ${userId}. Hafta hafta hangi high-tier paketten kaç adet almış.</caption>${head+body}`;
-}
-
-function renderRiskTables() {
-  document.getElementById('sharedDeviceTable').innerHTML = `<thead><tr><th>Cihaz</th><th>Kullanıcı</th><th>İşlem</th><th>Gelir</th><th>Örnek kullanıcılar</th></tr></thead><tbody>${analysis.deviceGroups.map(x=>`<tr><td>${x.device}</td><td>${x.userCount}</td><td>${x.txCount}</td><td>${fmtMoney(x.revenue)}</td><td class="muted">${x.users.join(', ')}</td></tr>`).join('')}</tbody>`;
-  document.getElementById('sharedIpTable').innerHTML = `<thead><tr><th>IP</th><th>Ülke</th><th>Kullanıcı</th><th>İşlem</th><th>Gelir</th><th>Örnek kullanıcılar</th></tr></thead><tbody>${analysis.ipGroups.map(x=>`<tr><td>${x.ip}</td><td>${x.country}</td><td>${x.userCount}</td><td>${x.txCount}</td><td>${fmtMoney(x.revenue)}</td><td class="muted">${x.users.join(', ')}</td></tr>`).join('')}</tbody>`;
-}
-
-function renderUserTable() {
-  const rows = [...analysis.userStats].sort((a,b)=>b.totalUsd-a.totalUsd).slice(0,300);
-  document.getElementById('userDetailTable').innerHTML = `<thead><tr>
-  <th>Kullanıcı</th><th>Gelir</th><th>İşlem</th><th>Son işlem</th><th>Trend</th><th>Dominant paket</th><th>Sadakat</th><th>High-tier</th><th>Yöntem</th><th>RFM</th><th>Risk</th><th>Aksiyon</th>
-  </tr></thead><tbody>
-  ${rows.map(u=>`<tr>
-    <td>${u.userId}</td><td>${fmtMoney(u.totalUsd)}</td><td>${u.txCount}</td><td>${u.lastPaid.toISOString().slice(0,10)}</td>
-    <td>${u.trendPct.toFixed(1)}%</td><td>${u.dominantPackage}</td><td>${fmtPct(u.dominantRatio*100)}</td>
-    <td>${u.highTierTxCount} / ${fmtMoney(u.highTierUsd)}</td><td>${u.methodPref}</td>
-    <td>${u.rfm.r}${u.rfm.f}${u.rfm.m}</td><td><span class="badge ${u.risk>=60?'bad':u.risk>=40?'warn':'good'}">${u.risk}</span></td><td>${u.action}</td>
-  </tr>`).join('')}
-  </tbody>`;
-}
-
-function runAll() {
-  normalized = parseRows(rawRows);
-  analysis = buildAnalysis(normalized);
-  render();
-}
-
-async function handleFile(file) {
-  const name = file.name.toLowerCase();
-  if (name.endsWith('.csv')) {
-    const text = await file.text();
-    const wb = XLSX.read(text, {type:'string'});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    rawRows = XLSX.utils.sheet_to_json(sheet, {defval:''});
-  } else {
-    const data = await file.arrayBuffer();
-    const wb = XLSX.read(data, {type:'array'});
-    const sheet = wb.Sheets[wb.SheetNames[0]];
-    rawRows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+  let exclusiveUsers = 0;
+  if (selectedType !== 'all'){
+    const allByUser = byGroup(allRows, r=>r.displayId);
+    exclusiveUsers = Object.values(allByUser).filter(arr => arr.every(r=>r.typeClass===selectedType)).length;
   }
-  runAll();
-}
 
-document.getElementById('fileInput').addEventListener('change', e => {
-  const file = e.target.files[0]; if (file) handleFile(file);
-});
-document.getElementById('loadSampleBtn').addEventListener('click', loadSample);
-document.getElementById('exportJsonBtn').addEventListener('click', () => {
-  if (!analysis) return;
-  const blob = new Blob([JSON.stringify(analysis, (k,v) => v instanceof Date ? v.toISOString() : v, 2)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'yaver-analysis.json'; a.click();
-});
-const drop = document.getElementById('dropZone');
-['dragenter','dragover'].forEach(evt => drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.add('drag'); }));
-['dragleave','drop'].forEach(evt => drop.addEventListener(evt, e => { e.preventDefault(); drop.classList.remove('drag'); }));
-drop.addEventListener('drop', e => { const f=e.dataTransfer.files[0]; if (f) handleFile(f); });
+  const typeUserGroups = ['gold','gems','mixed'].map(type=>{
+    let usersSubset = userStats.filter(u=> type==='mixed' ? (u.dominantType!=='gold' && u.dominantType!=='gems') : u.dominantType===type);
+    const avgDays = usersSubset.length ? sum(usersSubset.map(u=>Math.floor((Date.now()-u.lastPay.getTime())/86400000)))/usersSubset.length : 0;
+    return {
+      label: type==='gold' ? 'Gold-dominant | 金币主导' : type==='gems' ? 'Gems-dominant | 宝石主导' : 'Karma | 混合',
+      users: usersSubset.length,
+      revenue: sum(usersSubset.map(u=>u.totalRev)),
+      orders: sum(usersSubset.map(u=>u.orders)),
+      avgOrder: usersSubset.length ? sum(usersSubset.map(u=>u.totalRev))/sum(usersSubset.map(u=>u.orders)||[1]) : 0,
+      avgDays
+    };
+  });
+
+  return {
+    selectedType,
+    selectedLabel: typeLabel(selectedType),
+    totalOrders: rows.length,
+    totalUsers: selectedUsers.size,
+    totalRevenue: sum(rows.map(r=>r.price)),
+    avgOrder: rows.length ? sum(rows.map(r=>r.price))/rows.length : 0,
+    orderShare, revenueShare, userPenetration, exclusiveUsers,
+    daily:[...daily.values()].sort((a,b)=>a.day.localeCompare(b.day)),
+    methods:[...methods.entries()].sort((a,b)=>b[1]-a[1]),
+    hours, latBuckets, packages, userStats, loyalUsers, highUsers, highThreshold, cohort, weeklyList, riskRows, typeStats, typeDaily, typeUserGroups,
+    totalAllUsers: allUsersSet.size, totalAllRevenue, totalAllOrders
+  };
+}
+function destroyChart(id){ if(state.charts[id]) state.charts[id].destroy(); }
+function makeChart(id, config){ destroyChart(id); state.charts[id]=new Chart(el(id), config); }
+function colorList(n){ const base=['#18c7ff','#3b82f6','#ffcc00','#23c27f','#ff7a59','#a78bfa','#f472b6','#22d3ee','#fb7185','#f59e0b']; return Array.from({length:n},(_,i)=>base[i%base.length]); }
+function chartOpts(){ return { responsive:true, maintainAspectRatio:false, scales:{ x:{ticks:{color:'#d7e8ff',maxRotation:0,autoSkip:true}}, y:{ticks:{color:'#d7e8ff'}} }, plugins:{ legend:{labels:{color:'#eef4ff'}} } }; }
+function chartOptsDual(){ return { responsive:true, maintainAspectRatio:false, scales:{ x:{ticks:{color:'#d7e8ff'}}, y:{ticks:{color:'#d7e8ff'}}, y1:{position:'right', grid:{drawOnChartArea:false}, ticks:{color:'#d7e8ff'}} }, plugins:{ legend:{labels:{color:'#eef4ff'}} } }; }
+function chartOptsStacked(){ return { responsive:true, maintainAspectRatio:false, scales:{ x:{stacked:true,ticks:{color:'#d7e8ff'}}, y:{stacked:true,ticks:{color:'#d7e8ff'}} }, plugins:{ legend:{labels:{color:'#eef4ff'}} } }; }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+
+function renderTypeKpis(a){
+  const totalUsers = a.totalAllUsers;
+  const totalOrders = a.totalAllOrders;
+  const totalRevenue = a.totalAllRevenue;
+  const goldUsers = a.typeStats.gold.users.size, gemsUsers = a.typeStats.gems.users.size;
+
+  if (a.selectedType === 'all'){
+    el('typeKpis').innerHTML = `
+      <div class="card kpi"><div class="label">Gold sipariş payı | 金币订单占比</div><div class="value">%${(totalOrders? a.typeStats.gold.orders/totalOrders*100:0).toFixed(1)}</div><div class="sub">${fmtNum(a.typeStats.gold.orders)} sipariş | ${fmtNum(a.typeStats.gold.orders)} 笔订单</div></div>
+      <div class="card kpi"><div class="label">Gold ciro payı | 金币营收占比</div><div class="value">%${(totalRevenue? a.typeStats.gold.revenue/totalRevenue*100:0).toFixed(1)}</div><div class="sub">${fmtMoney(a.typeStats.gold.revenue)} | ${fmtNum(goldUsers)} kullanıcı</div></div>
+      <div class="card kpi"><div class="label">Gems sipariş payı | 宝石订单占比</div><div class="value">%${(totalOrders? a.typeStats.gems.orders/totalOrders*100:0).toFixed(1)}</div><div class="sub">${fmtNum(a.typeStats.gems.orders)} sipariş | ${fmtNum(a.typeStats.gems.orders)} 笔订单</div></div>
+      <div class="card kpi"><div class="label">Gems ciro payı | 宝石营收占比</div><div class="value">%${(totalRevenue? a.typeStats.gems.revenue/totalRevenue*100:0).toFixed(1)}</div><div class="sub">${fmtMoney(a.typeStats.gems.revenue)} | ${fmtNum(gemsUsers)} kullanıcı</div></div>
+    `;
+  } else {
+    el('typeKpis').innerHTML = `
+      <div class="card kpi"><div class="label">${a.selectedLabel} sipariş payı | 订单占比</div><div class="value">%${a.orderShare.toFixed(1)}</div><div class="sub">Toplam ${fmtNum(a.totalAllOrders)} sipariş içindeki oran | 占总订单 ${fmtNum(a.totalAllOrders)} 的比例</div></div>
+      <div class="card kpi"><div class="label">${a.selectedLabel} ciro payı | 营收占比</div><div class="value">%${a.revenueShare.toFixed(1)}</div><div class="sub">Toplam ${fmtMoney(a.totalAllRevenue)} içindeki oran | 占总营收的比例</div></div>
+      <div class="card kpi"><div class="label">${a.selectedLabel} kullanıcı penetrasyonu | 用户渗透率</div><div class="value">%${a.userPenetration.toFixed(1)}</div><div class="sub">${fmtNum(a.totalUsers)} kullanıcı | ${fmtNum(a.totalUsers)} 名用户</div></div>
+      <div class="card kpi"><div class="label">${a.selectedLabel} exclusive kullanıcı | 独占用户</div><div class="value">${fmtNum(a.exclusiveUsers)}</div><div class="sub">Sadece bu tipte yükleme yapan kullanıcılar | 只充值该类型的用户</div></div>
+    `;
+  }
+}
+function renderSinglePackageChart(){
+  const a=state.analysis; if(!a || !a.packages.length){ destroyChart('singlePackageChart'); return; }
+  const pkgName = el('packageSelect').value || a.packages[0].name;
+  const metric = el('packageMetricSelect').value, gran = el('packageGranularitySelect').value;
+  const p = a.packages.find(x=>x.name===pkgName); if(!p) return;
+  let labels=[], data=[];
+  if (gran==='day'){
+    labels = a.daily.map(x=>x.day);
+    data = labels.map(d=> metric==='qty' ? (p.dailyQtyObj[d]||0) : (p.dailyRevObj[d]||0));
+  } else {
+    labels = a.weeklyList;
+    data = labels.map(w=> metric==='qty' ? (p.weeklyQtyObj[w]||0) : sum(state.rows.filter(r=>r.productName===p.name && r.week===w && (state.filteredType==='all' || r.typeClass===state.filteredType)).map(r=>r.price)));
+  }
+  makeChart('singlePackageChart',{type:'line',data:{labels,datasets:[{label:`${pkgName} - ${metric==='qty'?'Adet | 数量':'Ciro | 营收'}`,data,borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.18)',fill:true,tension:.25}]},options:chartOpts()});
+}
+function renderHighUser(){
+  const a=state.analysis;
+  if(!a || !a.highUsers.length){
+    el('highUserMatrix').innerHTML = '<div class="empty-note">High-tier kullanıcı bulunmadı. | 未找到高价礼包用户。</div>';
+    destroyChart('highUserChart');
+    el('highUserSelect').innerHTML = '';
+    return;
+  }
+  const id = el('highUserSelect').value || a.highUsers[0].id;
+  const u = a.highUsers.find(x=>x.id===id); if(!u) return;
+  const packageNames = [...new Set(u.highRows.map(r=>r.productName))];
+  const weeks = [...new Set(u.highRows.map(r=>r.week))].sort();
+  makeChart('highUserChart',{type:'bar',data:{labels:weeks,datasets:packageNames.map((p,i)=>({label:p,data:weeks.map(w=>u.highRows.filter(r=>r.week===w && r.productName===p).length),backgroundColor:colorList(packageNames.length)[i],stack:'s'}))},options:chartOptsStacked()});
+  let html = '<table><thead><tr><th>Hafta | 周</th>' + packageNames.map(p=>`<th>${escapeHtml(p)}</th>`).join('') + '</tr></thead><tbody>';
+  html += weeks.map(w=>'<tr><td>'+w+'</td>' + packageNames.map(p=>`<td>${u.highRows.filter(r=>r.week===w && r.productName===p).length}</td>`).join('') + '</tr>').join('');
+  html += '</tbody></table>';
+  el('highUserMatrix').innerHTML = html;
+}
+function renderCohort(){
+  const a = state.analysis;
+  if (!a.cohort.length){ el('cohortWrap').innerHTML='Cohort için yeterli veri yok. | 没有足够数据生成 cohort。'; return; }
+  let allWeeks=[...new Set(a.cohort.flatMap(r=>r.values.map(v=>v.week)))];
+  let html='<table><thead><tr><th>Cohort | 分组</th><th>Boyut | 规模</th>' + allWeeks.map(w=>`<th>${w}</th>`).join('') + '</tr></thead><tbody>';
+  html += a.cohort.map(r=>{
+    const map=Object.fromEntries(r.values.map(v=>[v.week,v.pct]));
+    return '<tr><td>'+r.cohort+'</td><td>'+fmtNum(r.size)+'</td>' + allWeeks.map(w=>{
+      if (map[w] == null || w < r.cohort) return '<td>-</td>';
+      const pct = map[w], alpha=Math.max(.12,pct/100);
+      return `<td style="background:rgba(24,199,255,${alpha})">${pct}%</td>`;
+    }).join('') + '</tr>';
+  }).join('');
+  html += '</tbody></table>';
+  el('cohortWrap').innerHTML = html;
+}
+function render(){
+  if (!state.rows.length){ setStatus('Henüz veri yüklenmedi. | 尚未加载数据。'); return; }
+  const filtered = getRowsByType(state.filteredType);
+  state.analysis = analyze(filtered, state.rows, state.filteredType);
+  const a = state.analysis;
+
+  setStatus(`${a.selectedLabel} seçili. ${fmtNum(a.totalOrders)} sipariş, ${fmtNum(a.totalUsers)} kullanıcı, toplam ciro ${fmtMoney(a.totalRevenue)} | 已选择 ${a.selectedLabel}。${fmtNum(a.totalOrders)} 笔订单，${fmtNum(a.totalUsers)} 名用户，总营收 ${fmtMoney(a.totalRevenue)}`);
+
+  el('kpis').innerHTML = `
+    <div class="card kpi"><div class="label">Seçili görünüm | 当前视图</div><div class="value">${a.selectedLabel}</div><div class="sub">Filtreye göre yeniden hesaplandı | 已按筛选条件重新计算</div></div>
+    <div class="card kpi"><div class="label">Toplam sipariş | 总订单</div><div class="value">${fmtNum(a.totalOrders)}</div><div class="sub">Geçerli satırlar | 有效记录</div></div>
+    <div class="card kpi"><div class="label">Tekil kullanıcı | 唯一用户</div><div class="value">${fmtNum(a.totalUsers)}</div><div class="sub">显示ID bazlı | 按 显示ID 统计</div></div>
+    <div class="card kpi"><div class="label">Toplam ciro | 总营收</div><div class="value">${fmtMoney(a.totalRevenue)}</div><div class="sub">Ortalama sipariş ${fmtMoney(a.avgOrder)} | 平均订单 ${fmtMoney(a.avgOrder)}</div></div>`;
+
+  renderTypeKpis(a);
+
+  makeChart('dailyChart',{type:'line',data:{labels:a.daily.map(x=>x.day),datasets:[{label:'Ciro | 营收',data:a.daily.map(x=>x.rev),borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.18)',yAxisID:'y',fill:true,tension:.25},{label:'Sipariş | 订单',data:a.daily.map(x=>x.orders),borderColor:'#ffcc00',backgroundColor:'transparent',yAxisID:'y1',tension:.25}]},options:chartOptsDual()});
+
+  if (state.filteredType === 'all'){
+    const days = [...new Set([...a.typeDaily.gold.keys(), ...a.typeDaily.gems.keys()])].sort();
+    makeChart('typeCompareChart',{type:'line',data:{labels:days,datasets:[
+      {label:'Gold ciro | 金币营收',data:days.map(d=>(a.typeDaily.gold.get(d)?.revenue)||0),borderColor:'#ffcc00',backgroundColor:'rgba(255,204,0,.12)',fill:false,tension:.25},
+      {label:'Gems ciro | 宝石营收',data:days.map(d=>(a.typeDaily.gems.get(d)?.revenue)||0),borderColor:'#35d399',backgroundColor:'rgba(53,211,153,.12)',fill:false,tension:.25}
+    ]},options:chartOpts()});
+  } else {
+    const selected = a.selectedType;
+    const baseOrders = a.totalAllOrders ? (a.totalOrders / a.totalAllOrders * 100) : 0;
+    const baseRevenue = a.totalAllRevenue ? (a.totalRevenue / a.totalAllRevenue * 100) : 0;
+    makeChart('typeCompareChart',{type:'bar',data:{labels:['Sipariş payı | 订单占比','Ciro payı | 营收占比','Kullanıcı penetrasyonu | 用户渗透率'],datasets:[{label:a.selectedLabel,data:[baseOrders,baseRevenue,a.userPenetration],backgroundColor:selected==='gold' ? '#ffcc00' : '#35d399'}]},options:chartOpts()});
+  }
+
+  makeChart('methodChart',{type:'bar',data:{labels:a.methods.map(x=>x[0]),datasets:[{label:'Ciro | 营收',data:a.methods.map(x=>x[1]),backgroundColor:colorList(a.methods.length)}]},options:chartOpts()});
+  makeChart('hourChart',{type:'bar',data:{labels:[...Array(24).keys()].map(h=>String(h).padStart(2,'0')+':00'),datasets:[{label:'Sipariş | 订单',data:a.hours,backgroundColor:'#3b82f6'}]},options:chartOpts()});
+  makeChart('latencyChart',{type:'bar',data:{labels:Object.keys(a.latBuckets),datasets:[{label:'Sipariş | 订单',data:Object.values(a.latBuckets),backgroundColor:'#ffb84d'}]},options:chartOpts()});
+
+  const loyaltyBands=['Tam tek paket | 完全单礼包','Yüksek sadakat | 高忠诚','Baskın paketli | 主导礼包','Karışık | 混合'];
+  const loyaltyCounts=loyaltyBands.map(k=>a.userStats.filter(u=>u.loyalBand===k).length);
+  makeChart('loyaltyChart',{type:'doughnut',data:{labels:loyaltyBands,datasets:[{data:loyaltyCounts,backgroundColor:['#18c7ff','#23c27f','#ffcc00','#ff6677']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#eef4ff'}}}}});
+
+  const topPackages=a.packages.slice(0,8), days=a.daily.map(x=>x.day);
+  makeChart('pkgQtyChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyQtyObj[d]||0),backgroundColor:colorList(8)[i],stack:'qty'}))},options:chartOptsStacked()});
+  makeChart('pkgRevChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyRevObj[d]||0),backgroundColor:colorList(8)[i],stack:'rev'}))},options:chartOptsStacked()});
+
+  el('packageSelect').innerHTML = a.packages.length ? a.packages.map((p,i)=>`<option value="${escapeAttr(p.name)}" ${i===0?'selected':''}>${escapeHtml(p.name)}</option>`).join('') : '';
+  renderSinglePackageChart();
+
+  el('loyalUsersBody').innerHTML = a.loyalUsers.length ? a.loyalUsers.slice(0,30).map(u=>`<tr><td>${u.id}</td><td>${escapeHtml(u.dominantPackage)}</td><td>${(u.dominantRatio*100).toFixed(1)}%</td><td>${fmtNum(u.orders)}</td><td>${fmtMoney(u.totalRev)}</td></tr>`).join('') : '<tr><td colspan="5">Eşik üstü sadık kullanıcı yok. | 没有达到阈值的忠诚用户。</td></tr>';
+
+  el('highUsersBody').innerHTML = a.highUsers.length ? a.highUsers.slice(0,40).map(u=>`<tr><td>${u.id}</td><td>${fmtNum(u.highCount)}</td><td>${fmtMoney(u.highRev)}</td><td>${escapeHtml(u.topHigh)}</td><td>${fmtDate(u.lastPay)}</td></tr>`).join('') : '<tr><td colspan="5">High-tier kullanıcı yok. | 没有高价礼包用户。</td></tr>';
+  el('highUserSelect').innerHTML = a.highUsers.length ? a.highUsers.slice(0,100).map((u,i)=>`<option value="${escapeAttr(u.id)}" ${i===0?'selected':''}>${escapeHtml(u.id)} | ${fmtMoney(u.highRev)}</option>`).join('') : '<option value="">Kullanıcı yok | 无用户</option>';
+  renderHighUser();
+
+  renderCohort();
+  el('riskBody').innerHTML = a.riskRows.length ? a.riskRows.slice(0,30).map(r=>`<tr><td>${r.type}</td><td>${escapeHtml(r.value)}</td><td>${fmtNum(r.count)}</td><td>${escapeHtml(r.sample)}</td></tr>`).join('') : '<tr><td colspan="4">Eşik üstü paylaşımlı IP / cihaz kümesi bulunmadı. | 未发现超过阈值的共享 IP / 设备簇。</td></tr>';
+
+  el('packageSummaryBody').innerHTML = a.packages.length ? a.packages.slice(0,30).map(p=>{
+    const qtyShare = a.totalOrders ? (p.qty / a.totalOrders * 100) : 0;
+    const revShare = a.totalRevenue ? (p.rev / a.totalRevenue * 100) : 0;
+    const userPen = a.totalUsers ? (p.users.size / a.totalUsers * 100) : 0;
+    const ordersPerUser = p.users.size ? (p.qty / p.users.size) : 0;
+    return `<tr><td>${escapeHtml(p.name)} ${p.isHighTier?'<span class="warn">★</span>':''}</td><td>${fmtNum(p.qty)}</td><td>%${qtyShare.toFixed(1)}</td><td>${fmtMoney(p.rev)}</td><td>%${revShare.toFixed(1)}</td><td>${fmtNum(p.users.size)}</td><td>%${userPen.toFixed(1)}</td><td>${ordersPerUser.toFixed(2)}</td><td>${fmtMoney(p.avgPrice)}</td></tr>`;
+  }).join('') : '<tr><td colspan="9">Paket verisi yok. | 没有礼包数据。</td></tr>';
+
+  el('topUsersBody').innerHTML = a.userStats.length ? a.userStats.slice(0,40).map(u=>`<tr><td>${u.id}</td><td>${fmtMoney(u.totalRev)}</td><td>${fmtNum(u.orders)}</td><td>${fmtDate(u.lastPay)}</td><td>${escapeHtml(u.dominantPackage)}</td></tr>`).join('') : '<tr><td colspan="5">Kullanıcı verisi yok. | 没有用户数据。</td></tr>';
+
+  el('typeUserSummaryBody').innerHTML = a.typeUserGroups.map(g=>`<tr><td>${g.label}</td><td>${fmtNum(g.users)}</td><td>${fmtMoney(g.revenue)}</td><td>${fmtNum(g.orders)}</td><td>${fmtMoney(g.avgOrder)}</td><td>${g.avgDays.toFixed(1)}</td></tr>`).join('');
+
+  document.querySelectorAll('.seg-btn').forEach(btn=>btn.classList.toggle('active', btn.dataset.type===state.filteredType));
+}
+async function loadFile(file){
+  try{
+    setStatus(`Yükleniyor: ${file.name} ... | 正在加载：${file.name} ...`);
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer,{type:'array'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rawRows = XLSX.utils.sheet_to_json(ws,{defval:''});
+    const rows = normalizeRows(rawRows);
+    if(!rows.length) throw new Error('Geçerli satır bulunamadı. Kolon adları veya tarih biçimi uyuşmuyor olabilir. | 未找到有效行，列名或日期格式可能不匹配。');
+    state.rows = rows;
+    render();
+  }catch(err){
+    console.error(err);
+    setStatus('Yükleme hatası | 加载错误: ' + err.message, true);
+  }
+}
+el('fileInput').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadFile(f); });
+el('packageSelect').addEventListener('change', renderSinglePackageChart);
+el('packageMetricSelect').addEventListener('change', renderSinglePackageChart);
+el('packageGranularitySelect').addEventListener('change', renderSinglePackageChart);
+el('highUserSelect').addEventListener('change', renderHighUser);
+document.querySelectorAll('.seg-btn').forEach(btn=> btn.addEventListener('click', ()=>{ state.filteredType = btn.dataset.type; if(state.rows.length) render(); else { document.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active', b===btn)); } }));
+const dz = el('dropZone');
+['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault(); dz.classList.add('drag');}));
+['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault(); dz.classList.remove('drag');}));
+dz.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
 </script>
 </body>
 </html>
-"""
-html = html_template.replace('__LOGO_B64__', b64)
-out='/mnt/data/yaver_payment_intelligence_rebuilt.html'
-with open(out,'w',encoding='utf-8') as f:
-    f.write(html)
-print(out, os.path.getsize(out))
+'''
+out = Path('/mnt/data/yaver_payment_intelligence_v8_filters_sections.html')
+out.write_text(html, encoding='utf-8')
+print(out, out.stat().st_size)

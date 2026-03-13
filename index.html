@@ -1,5 +1,4 @@
-from pathlib import Path
-html = r'''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
@@ -7,34 +6,52 @@ html = r'''<!DOCTYPE html>
 <title>YAVER Ödeme İstihbarat Paneli | YAVER 支付情报面板</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 :root{
   --bg:#07111f; --panel:#0d1b2e; --panel2:#112542; --line:#223a5f; --muted:#9cb0d1; --text:#eef4ff;
   --brand:#18c7ff; --brand2:#3b82f6; --gold:#ffcc00; --gems:#35d399; --warn:#ffb84d; --bad:#ff6677; --chip:#162b4b;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:linear-gradient(180deg,#07111f 0,#09162a 100%);color:var(--text)}
-header{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:rgba(7,17,31,.92);border-bottom:1px solid var(--line)}
+html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:
+radial-gradient(1200px 700px at 8% -10%, rgba(24,199,255,.14), transparent 55%),
+radial-gradient(900px 600px at 100% 0%, rgba(59,130,246,.12), transparent 50%),
+linear-gradient(180deg,#07111f 0,#09162a 52%,#07111f 100%);color:var(--text);overflow-x:hidden}
+body::before,body::after{content:"";position:fixed;inset:auto;pointer-events:none;z-index:0;filter:blur(40px);opacity:.35}
+body::before{width:320px;height:320px;left:-80px;top:140px;background:radial-gradient(circle,#18c7ff 0,transparent 70%);animation:floatOrb 16s ease-in-out infinite}
+body::after{width:360px;height:360px;right:-100px;top:420px;background:radial-gradient(circle,#3b82f6 0,transparent 72%);animation:floatOrb 20s ease-in-out infinite reverse}
+header,main{position:relative;z-index:1}
+header{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);background:rgba(7,17,31,.82);border-bottom:1px solid rgba(77,110,155,.35);box-shadow:0 14px 30px rgba(0,0,0,.18)}
 .wrap{max-width:1600px;margin:0 auto;padding:0 20px}
 .head{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:26px;min-width:0;flex:1 1 900px}
 .wordmark-wrap{flex:0 0 420px;max-width:100%;display:flex;align-items:center;justify-content:center;min-height:150px}
-.wordmark{font-weight:900;font-size:92px;line-height:1;letter-spacing:2px;margin:0;white-space:nowrap;background:linear-gradient(90deg,#18c7ff 0%,#12d3ff 28%,#4fe19a 56%,#ffcc00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 10px 28px rgba(24,199,255,.10)}
+.wordmark{font-weight:900;font-size:92px;line-height:1;letter-spacing:2px;margin:0;white-space:nowrap;background:linear-gradient(90deg,#18c7ff 0%,#12d3ff 28%,#4fe19a 56%,#ffcc00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 12px 30px rgba(24,199,255,.18);animation:logoGlow 4.2s ease-in-out infinite}
 .brand-copy h1{margin:0;font-size:34px;line-height:1.1}
-.brand-copy p{margin:10px 0 0;color:var(--muted);max-width:860px;line-height:1.5}
+.brand-copy p{margin:10px 0 0;color:var(--muted);max-width:860px;line-height:1.6}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
 button,.btn,select,input{font:inherit}
-.btn{border:none;background:var(--panel2);color:var(--text);padding:12px 16px;border-radius:12px;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.05) inset}
-.btn:hover{filter:brightness(1.08)}
-.btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#04101f;font-weight:700}
-main{padding:22px 0 44px}
-.panel{background:linear-gradient(180deg,rgba(17,37,66,.95),rgba(11,24,42,.95));border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.btn{border:none;background:rgba(17,37,66,.72);color:var(--text);padding:12px 16px;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 10px 24px rgba(0,0,0,.18);transition:transform .22s ease, box-shadow .22s ease, filter .22s ease}
+.btn:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 16px 28px rgba(0,0,0,.22)}
+.btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#04101f;font-weight:800}
+main{padding:24px 0 52px}
+.panel{background:linear-gradient(180deg,rgba(17,37,66,.88),rgba(10,21,38,.9));border:1px solid rgba(73,108,158,.35);border-radius:22px;padding:24px;box-shadow:0 18px 44px rgba(0,0,0,.22);position:relative;overflow:hidden;animation:fadeUp .55s ease both}
+.panel::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(24,199,255,.6),transparent)}
 .hero{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:18px}
-.uploader{border:2px dashed #335784;min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;transition:.2s}
-.uploader.drag{border-color:var(--brand);background:rgba(24,199,255,.05)}
+.uploader{border:2px dashed rgba(86,129,190,.5);min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;transition:.22s ease;background:linear-gradient(180deg,rgba(12,27,47,.46),rgba(11,23,41,.2))}
+.uploader.drag{border-color:var(--brand);background:linear-gradient(180deg,rgba(24,199,255,.10),rgba(59,130,246,.06))}
 .uploader strong{display:block;font-size:20px;margin-bottom:10px}
 .small{color:var(--muted);font-size:13px}
+.hidden{display:none !important}
 .status{margin-top:12px;font-size:14px;color:var(--brand)}
+.loyalty-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0 14px}
+.loyalty-kpi{background:linear-gradient(180deg,rgba(13,27,46,.88),rgba(8,20,36,.92));border:1px solid rgba(72,107,156,.28);border-radius:16px;padding:12px 14px}
+.loyalty-kpi .mini{font-size:12px;color:var(--muted);margin-bottom:6px}
+.loyalty-kpi .big{font-size:24px;font-weight:900;line-height:1.05}
+.loyalty-kpi .sub{margin-top:6px;font-size:12px;color:var(--muted)}
 .filter-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
 .filter-left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .filter-title{font-size:15px;color:var(--muted)}
@@ -46,35 +63,38 @@ main{padding:22px 0 44px}
 .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
 .grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.card{background:linear-gradient(180deg,rgba(13,27,46,.96),rgba(10,22,39,.96));border:1px solid var(--line);border-radius:18px;padding:18px}
-.kpi .label{color:var(--muted);font-size:13px}
-.kpi .value{font-size:34px;font-weight:800;margin-top:6px}
-.kpi .sub{margin-top:8px;color:var(--muted);font-size:13px;line-height:1.45}
+.card{background:linear-gradient(180deg,rgba(13,27,46,.92),rgba(8,20,36,.96));border:1px solid rgba(72,107,156,.34);border-radius:22px;padding:20px;box-shadow:0 18px 38px rgba(0,0,0,.18);position:relative;overflow:hidden;transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;animation:fadeUp .7s ease both}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,rgba(24,199,255,.0),rgba(24,199,255,.75),rgba(255,204,0,.55),rgba(24,199,255,0));opacity:.85}
+.card:hover{transform:translateY(-3px);box-shadow:0 24px 44px rgba(0,0,0,.24);border-color:rgba(98,141,201,.54)}
+.card h3{margin:0 0 14px;font-size:20px;line-height:1.35}
+.kpi .label{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+.kpi .value{font-size:36px;font-weight:900;margin-top:8px;line-height:1.05}
+.kpi .sub{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.55}
 .section-toggle{margin:24px 0 0}
-.section-toggle summary{list-style:none;cursor:pointer;padding:16px 20px;background:linear-gradient(180deg,rgba(17,37,66,.95),rgba(11,24,42,.95));border:1px solid var(--line);border-radius:16px;font-size:22px;font-weight:800;display:flex;align-items:center;justify-content:space-between}
+.section-toggle summary{list-style:none;cursor:pointer;padding:17px 22px;background:linear-gradient(180deg,rgba(17,37,66,.92),rgba(11,24,42,.9));border:1px solid rgba(73,108,158,.38);border-radius:18px;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:space-between;box-shadow:0 14px 30px rgba(0,0,0,.16);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
+.section-toggle summary:hover{transform:translateY(-1px);border-color:rgba(96,144,208,.55);box-shadow:0 18px 32px rgba(0,0,0,.2)}
 .section-toggle summary::-webkit-details-marker{display:none}
-.section-toggle summary .hint{font-size:13px;font-weight:500;color:var(--muted)}
+.section-toggle summary .hint{font-size:13px;font-weight:600;color:var(--muted)}
 .section-toggle[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
 .section-body{padding:16px 0 0}
-canvas{width:100% !important;height:340px !important}
-.table-wrap{overflow:auto;max-height:560px}
+canvas{width:100% !important;height:360px !important}
+.table-wrap{overflow:auto;max-height:560px;border-radius:14px}
 table{width:100%;border-collapse:collapse;font-size:14px}
 th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;vertical-align:top}
-th{position:sticky;top:0;background:#10213a;z-index:1}
-tr:hover td{background:rgba(255,255,255,.02)}
+th{position:sticky;top:0;background:#10213a;color:#eaf2ff;z-index:1}
 .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-select{background:#10213a;color:var(--text);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.notice{padding:12px 14px;border-left:4px solid var(--warn);background:rgba(255,184,77,.08);color:#ffe0ad;border-radius:10px;margin-bottom:12px}
-.footer-note{color:var(--muted);font-size:13px;margin-top:12px;line-height:1.55}
-.hidden{display:none}
-.bad{color:var(--bad)} .warn{color:var(--warn)} .good{color:#23c27f}
-.heat table td{text-align:center;min-width:72px}
-.legend-inline{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:6px}
-.dot{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:6px}
-.dot.gold{background:var(--gold)} .dot.gems{background:var(--gems)} .dot.all{background:var(--brand)}
-.empty-note{color:var(--muted);font-size:14px;padding:12px 0}
-@media (max-width:1200px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}.brand{flex-direction:column;text-align:center}.brand-copy p{max-width:none}.wordmark-wrap{min-height:120px;flex-basis:100%}.wordmark{font-size:72px}}
-@media (max-width:780px){.grid2,.grid3,.grid4{grid-template-columns:1fr}.head{justify-content:center}.wordmark{font-size:54px}.wordmark-wrap{min-height:90px}}
+select{background:#10213a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.notice,.footer-note,.empty-note{font-size:13px;color:var(--muted);line-height:1.55}
+.legend-inline{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.dot.all{background:var(--brand)} .dot.gold{background:var(--gold)} .dot.gems{background:var(--gems)}
+.status.bad{color:#ff7b8f}
+.warn{color:var(--gold)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(24,199,255,.0))}50%{filter:drop-shadow(0 0 16px rgba(24,199,255,.18))}}
+@keyframes floatOrb{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(20px,-26px,0)}}
+@media (max-width:1100px){ .grid4,.grid3,.grid2,.loyalty-kpis{grid-template-columns:1fr} .head{justify-content:center} .brand{flex-direction:column;text-align:center} .wordmark-wrap{flex-basis:100%;min-height:100px} .wordmark{font-size:68px} }
+@media (max-width:640px){ .wordmark{font-size:44px;letter-spacing:1px} .brand-copy h1{font-size:28px} }
 </style>
 </head>
 <body>
@@ -88,7 +108,7 @@ select{background:#10213a;color:var(--text);border:1px solid var(--line);border-
       </div>
     </div>
     <div class="actions">
-      <label class="btn primary" for="fileInput">CSV / Excel yükle | 上传 CSV / Excel</label>
+      <button class="btn" id="pdfBtn" type="button">PDF indir | 下载 PDF</button>
       <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden">
     </div>
   </div>
@@ -195,7 +215,13 @@ select{background:#10213a;color:var(--text);border:1px solid var(--line);border-
 
       <section class="grid2" style="margin-top:16px;">
         <div class="card">
-          <h3>Paket sadakati dağılımı | 礼包忠诚度分布</h3>
+          <div class="controls" style="justify-content:space-between;align-items:flex-start;gap:16px; margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0 0 6px;">Paket sadakati profili | 礼包忠诚度画像</h3>
+              <div class="small">Renkli halka yerine kullanıcı sayısı ve oranı birlikte gösterilir. | 不再只用圆环图，而是同时显示用户数与占比。</div>
+            </div>
+          </div>
+          <div class="loyalty-kpis" id="loyaltyKpiRow"></div>
           <canvas id="loyaltyChart"></canvas>
         </div>
         <div class="card">
@@ -208,17 +234,14 @@ select{background:#10213a;color:var(--text);border:1px solid var(--line);border-
 
   <details class="section-toggle">
     <summary>
-      <span>3. Risk, retention ve üst kullanıcılar | 风险、留存与头部用户</span>
+      <span>3. Risk ve üst kullanıcılar | 风险与头部用户</span>
       <span class="hint">Aç / Kapat | 展开 / 收起</span>
     </summary>
     <div class="section-body">
-      <section class="grid2">
-        <div class="card heat"><h3>Gerçek haftalık cohort retention | 真实每周 cohort 留存</h3><div id="cohortWrap"></div></div>
-        <div class="card"><h3>Cihaz / IP paylaşım risk kümeleri | 设备 / IP 共享风险簇</h3>
-          <div class="notice">Shared IP veya shared device tek başına suç değildir. Ama toplu risk sinyalidir. | 共享 IP 或共享设备本身不等于违规，但属于群体风险信号。</div>
+      <section><div class="card"><h3>Cihaz / IP paylaşım risk kümeleri | 设备 / IP 共享风险簇</h3>
+          <div class="notice">Shared IP veya shared device tek başına suç değildir. Ama kümelenme, özellikle aynı dönemde tekrar ediyorsa, inceleme gerektiren risk sinyalidir. | 共享 IP 或共享设备本身不等于违规，但若在同一时期反复聚集出现，则属于需要复核的风险信号。</div>
           <div class="table-wrap"><table><thead><tr><th>Tür | 类型</th><th>Değer | 值</th><th>Kullanıcı sayısı | 用户数</th><th>Örnek kullanıcılar | 示例用户</th></tr></thead><tbody id="riskBody"></tbody></table></div>
-        </div>
-      </section>
+        </div></section>
       <section class="grid2" style="margin-top:16px;">
         <div class="card">
           <h3>En yüksek ciro yapan kullanıcılar | 营收最高用户</h3>
@@ -285,172 +308,205 @@ function normalizeRows(raw){
   for(const row of raw){
     const rec={};
     for(const [k,alts] of Object.entries(fieldMap)) rec[k]=pick(row,alts);
-    rec.displayId=String(rec.displayId || rec.accountId || '').trim();
-    rec.productName=String(rec.productName || '').trim();
-    rec.productType=String(rec.productType || '').trim() || 'Unknown';
-    rec.price=Number(rec.price || 0);
-    rec.quantity=Number(rec.quantity || 0) || 1;
-    rec.orderTime=parseDate(rec.orderTime);
-    rec.payTime=parseDate(rec.payTime);
-    rec.method=String(rec.method || 'Unknown').trim();
-    rec.channel=String(rec.channel || 'Unknown').trim();
-    rec.ip=String(rec.ip || '').trim();
-    rec.device=String(rec.device || '').trim();
-    rec.orderId=String(rec.orderId || '').trim();
-    if(!rec.displayId || !rec.productName || !rec.price || !rec.payTime) continue;
-    rec.typeClass = classifyType(rec.productType, rec.productName);
-    rec.day=rec.payTime.toISOString().slice(0,10);
-    rec.week=getWeekKey(rec.payTime);
-    rec.hour=rec.payTime.getHours();
-    rec.latencyMin=rec.orderTime ? Math.max(0, Math.round((rec.payTime-rec.orderTime)/60000)) : null;
-    out.push(rec);
+    const displayId = String(rec.displayId||'').trim();
+    const productName = String(rec.productName||'').trim();
+    const productType = String(rec.productType||'').trim();
+    const price = Number(String(rec.price||'0').replace(',','.')) || 0;
+    const qty = Number(String(rec.quantity||'1').replace(',','.')) || 1;
+    const orderTime = parseDate(rec.orderTime);
+    const payTime = parseDate(rec.payTime) || orderTime;
+    if(!displayId || !productName || !payTime || price<=0) continue;
+    const typeClass = classifyType(productType, productName);
+    out.push({
+      displayId, productName, productType, price, qty, orderTime, payTime, typeClass,
+      method: String(rec.method||rec.channel||'Unknown'),
+      ip: String(rec.ip||''), device:String(rec.device||''), country:String(rec.country||rec.ipCountry||''),
+      week:getWeekKey(payTime), day:payTime.toISOString().slice(0,10), hour:payTime.getHours()
+    });
   }
   return out;
 }
-function byGroup(arr, fn){ return arr.reduce((m,x)=>{ const k=fn(x); (m[k]||(m[k]=[])).push(x); return m; }, {}); }
-function getRowsByType(type){ return type==='all' ? state.rows : state.rows.filter(r=>r.typeClass===type); }
+function getRowsByType(type){
+  if(type==='all') return state.rows.filter(r=>r.typeClass==='gold'||r.typeClass==='gems');
+  return state.rows.filter(r=>r.typeClass===type);
+}
 function analyze(rows, allRows, selectedType){
-  const allUsersSet = new Set(allRows.map(r=>r.displayId));
-  const totalAllRevenue = sum(allRows.map(r=>r.price));
-  const totalAllOrders = allRows.length;
+  const validAll = allRows.filter(r=>r.typeClass==='gold'||r.typeClass==='gems');
+  const totalAllUsersSet = new Set(validAll.map(r=>r.displayId));
+  const totalAllOrders = validAll.length;
+  const totalAllRevenue = sum(validAll.map(r=>r.price));
 
-  const users = new Map(), packageMap = new Map(), daily = new Map(), methods = new Map();
-  const hours = Array(24).fill(0), latBuckets = {'0-1 dk | 0-1 分钟':0,'2-5 dk | 2-5 分钟':0,'6-15 dk | 6-15 分钟':0,'16-60 dk | 16-60 分钟':0,'60+ dk | 60+ 分钟':0}, weeks = new Set();
-  const typeDaily = { gold:new Map(), gems:new Map() };
-  const typeStats = {
-    gold:{orders:0,revenue:0,users:new Set()},
-    gems:{orders:0,revenue:0,users:new Set()}
-  };
+  const dailyMap = new Map(), methodMap=new Map(), latencyBuckets={'0-1 dk | 分钟':0,'1-10 dk | 分钟':0,'10-60 dk | 分钟':0,'60+ dk | 分钟':0};
+  const hourArr = Array.from({length:24},()=>0);
+  const userMap = new Map(), pkgMap = new Map();
+  const typeStats = {gold:{orders:0,revenue:0,users:new Set()}, gems:{orders:0,revenue:0,users:new Set()}};
+  const typeDaily = {gold:new Map(), gems:new Map()};
+  const ipMap = new Map(), deviceMap = new Map();
 
-  for (const r of allRows){
-    if (r.typeClass==='gold' || r.typeClass==='gems'){
-      typeStats[r.typeClass].orders += 1;
-      typeStats[r.typeClass].revenue += r.price;
-      typeStats[r.typeClass].users.add(r.displayId);
-      if (!typeDaily[r.typeClass].has(r.day)) typeDaily[r.typeClass].set(r.day,{day:r.day,orders:0,revenue:0});
-      typeDaily[r.typeClass].get(r.day).orders += 1;
-      typeDaily[r.typeClass].get(r.day).revenue += r.price;
-    }
-  }
+  rows.forEach(r=>{
+    if(!dailyMap.has(r.day)) dailyMap.set(r.day,{rev:0,orders:0});
+    dailyMap.get(r.day).rev += r.price; dailyMap.get(r.day).orders += 1;
+    methodMap.set(r.method,(methodMap.get(r.method)||0)+r.price);
+    hourArr[r.hour] += 1;
 
-  for (const r of rows){
-    weeks.add(r.week);
-    if (!users.has(r.displayId)) users.set(r.displayId,{id:r.displayId,rows:[],totalRev:0,orders:0,productCounts:new Map(),weeks:new Map(),devices:new Set(),ips:new Set(),lastPay:null,firstPay:null});
-    const u = users.get(r.displayId);
-    u.rows.push(r); u.totalRev += r.price; u.orders += 1; u.devices.add(r.device); u.ips.add(r.ip);
-    u.lastPay = !u.lastPay || r.payTime > u.lastPay ? r.payTime : u.lastPay;
-    u.firstPay = !u.firstPay || r.payTime < u.firstPay ? r.payTime : u.firstPay;
-    u.productCounts.set(r.productName,(u.productCounts.get(r.productName)||0)+1);
-    if (!u.weeks.has(r.week)) u.weeks.set(r.week,new Map());
-    u.weeks.get(r.week).set(r.productName,(u.weeks.get(r.week).get(r.productName)||0)+1);
+    const latMin = r.orderTime ? Math.max(0, (r.payTime-r.orderTime)/60000) : 0;
+    if(latMin<=1) latencyBuckets['0-1 dk | 分钟']++; else if(latMin<=10) latencyBuckets['1-10 dk | 分钟']++; else if(latMin<=60) latencyBuckets['10-60 dk | 分钟']++; else latencyBuckets['60+ dk | 分钟']++;
 
-    if (!packageMap.has(r.productName)) packageMap.set(r.productName,{name:r.productName,qty:0,rev:0,users:new Set(),prices:[],dailyQty:new Map(),dailyRev:new Map(),weeklyQty:new Map()});
-    const p = packageMap.get(r.productName);
+    if(!userMap.has(r.displayId)) userMap.set(r.displayId,{id:r.displayId, rows:[], packages:new Map(), types:new Map(), totalRev:0, firstPay:r.payTime, lastPay:r.payTime});
+    const u=userMap.get(r.displayId);
+    u.rows.push(r); u.totalRev += r.price; if(r.payTime<u.firstPay)u.firstPay=r.payTime; if(r.payTime>u.lastPay)u.lastPay=r.payTime;
+    u.packages.set(r.productName,(u.packages.get(r.productName)||0)+1);
+    u.types.set(r.typeClass,(u.types.get(r.typeClass)||0)+1);
+
+    if(!pkgMap.has(r.productName)) pkgMap.set(r.productName,{name:r.productName, typeClass:r.typeClass, qty:0, rev:0, users:new Set(), days:new Map(), weeks:new Map(), prices:[]});
+    const p=pkgMap.get(r.productName);
     p.qty += 1; p.rev += r.price; p.users.add(r.displayId); p.prices.push(r.price);
-    p.dailyQty.set(r.day,(p.dailyQty.get(r.day)||0)+1);
-    p.dailyRev.set(r.day,(p.dailyRev.get(r.day)||0)+r.price);
-    p.weeklyQty.set(r.week,(p.weeklyQty.get(r.week)||0)+1);
+    if(!p.days.has(r.day)) p.days.set(r.day,{qty:0,rev:0}); p.days.get(r.day).qty += 1; p.days.get(r.day).rev += r.price;
+    if(!p.weeks.has(r.week)) p.weeks.set(r.week,{qty:0,rev:0}); p.weeks.get(r.week).qty += 1; p.weeks.get(r.week).rev += r.price;
 
-    if (!daily.has(r.day)) daily.set(r.day,{day:r.day,rev:0,orders:0});
-    daily.get(r.day).rev += r.price; daily.get(r.day).orders += 1;
-    methods.set(r.method, (methods.get(r.method)||0)+r.price);
-    hours[r.hour] += 1;
-    const lb = r.latencyMin==null ? null : r.latencyMin <=1 ? '0-1 dk | 0-1 分钟' : r.latencyMin <=5 ? '2-5 dk | 2-5 分钟' : r.latencyMin <=15 ? '6-15 dk | 6-15 分钟' : r.latencyMin <=60 ? '16-60 dk | 16-60 分钟' : '60+ dk | 60+ 分钟';
-    if (lb) latBuckets[lb] += 1;
-  }
+    if(r.typeClass==='gold' || r.typeClass==='gems'){
+      typeStats[r.typeClass].orders += 1; typeStats[r.typeClass].revenue += r.price; typeStats[r.typeClass].users.add(r.displayId);
+      if(!typeDaily[r.typeClass].has(r.day)) typeDaily[r.typeClass].set(r.day,{revenue:0,orders:0});
+      typeDaily[r.typeClass].get(r.day).revenue += r.price; typeDaily[r.typeClass].get(r.day).orders += 1;
+    }
+    if(r.ip) { if(!ipMap.has(r.ip)) ipMap.set(r.ip,new Set()); ipMap.get(r.ip).add(r.displayId); }
+    if(r.device) { if(!deviceMap.has(r.device)) deviceMap.set(r.device,new Set()); deviceMap.get(r.device).add(r.displayId); }
+  });
 
-  const packages = [...packageMap.values()].map(p=>({
-    name:p.name, qty:p.qty, rev:p.rev, users:p.users, avgPrice:p.prices.length ? sum(p.prices)/p.prices.length : 0,
-    dailyQtyObj:Object.fromEntries(p.dailyQty), dailyRevObj:Object.fromEntries(p.dailyRev), weeklyQtyObj:Object.fromEntries(p.weeklyQty)
+  const packagePrices = [...pkgMap.values()].map(p=>p.avgPrice=sum(p.prices)/p.prices.length);
+  const highThreshold = getQuantile(packagePrices.filter(x=>x>0), .8);
+
+  const packages=[...pkgMap.values()].map(p=>({
+    ...p,
+    avgPrice:p.avgPrice || 0,
+    isHighTier:(p.avgPrice||0) >= highThreshold,
+    dailyQtyObj:Object.fromEntries([...p.days].map(([k,v])=>[k,v.qty])),
+    dailyRevObj:Object.fromEntries([...p.days].map(([k,v])=>[k,v.rev])),
+    weeklyQtyObj:Object.fromEntries([...p.weeks].map(([k,v])=>[k,v.qty])),
+    weeklyRevObj:Object.fromEntries([...p.weeks].map(([k,v])=>[k,v.rev]))
   })).sort((a,b)=>b.rev-a.rev);
 
-  const highThreshold = getQuantile(packages.map(p=>p.avgPrice), 0.8);
-  packages.forEach(p=> p.isHighTier = p.avgPrice >= highThreshold);
-  const highPackageNames = new Set(packages.filter(p=>p.isHighTier).map(p=>p.name));
-
-  const userStats = [...users.values()].map(u=>{
-    const topPkgEntry=[...u.productCounts.entries()].sort((a,b)=>b[1]-a[1])[0] || ['-',0];
-    const dominantRatio=u.orders ? topPkgEntry[1]/u.orders : 0;
-    const loyalBand = dominantRatio === 1 ? 'Tam tek paket | 完全单礼包' : dominantRatio >= .8 ? 'Yüksek sadakat | 高忠诚' : dominantRatio >= .6 ? 'Baskın paketli | 主导礼包' : 'Karışık | 混合';
-    const highRows=u.rows.filter(r=>highPackageNames.has(r.productName));
-    const highAgg={}; highRows.forEach(r=>{ highAgg[r.productName]=(highAgg[r.productName]||0)+1; });
-    const topHigh=Object.entries(highAgg).sort((a,b)=>b[1]-a[1])[0]?.[0] || '-';
-    const dominantTypeCounts={gold:0,gems:0,other:0}; u.rows.forEach(r=>dominantTypeCounts[r.typeClass]=(dominantTypeCounts[r.typeClass]||0)+1);
-    let dominantType='mixed';
-    const maxType = Object.entries(dominantTypeCounts).sort((a,b)=>b[1]-a[1])[0];
-    if (maxType && maxType[1]===u.rows.length && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
-    else if (maxType && maxType[1]/u.rows.length>=0.6 && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
-    return {id:u.id,totalRev:u.totalRev,orders:u.orders,dominantPackage:topPkgEntry[0],dominantRatio,loyalBand,lastPay:u.lastPay,firstPay:u.firstPay,devices:u.devices.size,ips:u.ips.size,weeks:u.weeks,rows:u.rows,highRows,highCount:highRows.length,highRev:sum(highRows.map(r=>r.price)),topHigh,dominantType};
+  const userStats=[...userMap.values()].map(u=>{
+    const orderCount=u.rows.length;
+    const dominantPackage=[...u.packages.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || '-';
+    const dominantCnt=[...u.packages.values()].sort((a,b)=>b-a)[0]||0;
+    const dominantRatio = orderCount ? dominantCnt/orderCount : 0;
+    const band = dominantRatio===1 ? 'Tam tek paket | 完全单礼包' : dominantRatio>=.8 ? 'Yüksek sadakat | 高忠诚' : dominantRatio>=.6 ? 'Baskın paketli | 主导礼包' : 'Karışık | 混合';
+    const highRows = u.rows.filter(r=>{
+      const p = packages.find(x=>x.name===r.productName);
+      return p?.isHighTier;
+    });
+    const dominantTypeEntry=[...u.types.entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || 'mixed';
+    return {
+      id:u.id, totalRev:u.totalRev, orders:orderCount, firstPay:u.firstPay, lastPay:u.lastPay, daysSinceLast:(Date.now()-u.lastPay)/86400000,
+      dominantPackage, dominantRatio, loyalBand:band, highRows, highCount:highRows.length, highRev:sum(highRows.map(r=>r.price)),
+      topHigh:[...highRows.reduce((m,r)=>(m.set(r.productName,(m.get(r.productName)||0)+1),m),new Map()).entries()].sort((a,b)=>b[1]-a[1])[0]?.[0] || '-',
+      dominantType:dominantTypeEntry
+    };
   }).sort((a,b)=>b.totalRev-a.totalRev);
 
-  const loyalUsers = userStats.filter(u=>u.dominantRatio>=0.8).sort((a,b)=>b.dominantRatio-a.dominantRatio || b.totalRev-a.totalRev).slice(0,100);
-  const highUsers = userStats.filter(u=>u.highCount>0).sort((a,b)=>b.highRev-a.highRev);
-  const weeklyList=[...weeks].sort();
-  const userById=Object.fromEntries(userStats.map(u=>[u.id,u]));
+  const loyalUsers=userStats.filter(u=>u.dominantRatio>=.8).sort((a,b)=>b.totalRev-a.totalRev);
+  const highUsers=userStats.filter(u=>u.highCount>0).sort((a,b)=>b.highRev-a.highRev);
 
-  const firstWeekUsers={};
-  for(const u of userStats){
-    const fw=getWeekKey(u.firstPay);
-    if(!firstWeekUsers[fw]) firstWeekUsers[fw]=new Set();
-    firstWeekUsers[fw].add(u.id);
-  }
-  const cohort=Object.entries(firstWeekUsers).sort((a,b)=>a[0].localeCompare(b[0])).slice(-10).map(([week,ids])=>{
-    const row={cohort:week,size:ids.size,values:[]}; const idArr=[...ids];
-    weeklyList.forEach(wk=>{ if(wk<week) return; const active=idArr.filter(id=>userById[id].rows.some(r=>r.week===wk)).length; row.values.push({week:wk,pct: ids.size ? Math.round(active/ids.size*100) : 0}); });
-    return row;
+  const daily=[...dailyMap.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([day,v])=>({day,...v}));
+  const methods=[...methodMap.entries()].sort((a,b)=>b[1]-a[1]);
+  const weeklyList=[...new Set(rows.map(r=>r.week))].sort();
+
+  const riskRows = [];
+  [...ipMap.entries()].filter(([,s])=>s.size>=3).sort((a,b)=>b[1].size-a[1].size).slice(0,15).forEach(([ip,s])=>{
+    riskRows.push({type:'IP', value:ip, count:s.size, sample:[...s].slice(0,5).join(', ')});
+  });
+  [...deviceMap.entries()].filter(([,s])=>s.size>=3).sort((a,b)=>b[1].size-a[1].size).slice(0,15).forEach(([dev,s])=>{
+    riskRows.push({type:'Cihaz | 设备', value:dev, count:s.size, sample:[...s].slice(0,5).join(', ')});
   });
 
-  const deviceGroups = byGroup(rows.filter(r=>r.device), r=>`DEVICE|${r.device}`);
-  const ipGroups = byGroup(rows.filter(r=>r.ip), r=>`IP|${r.ip}`);
-  const riskRows=[];
-  for (const [k,arr] of Object.entries(deviceGroups)){ const ids=[...new Set(arr.map(r=>r.displayId))]; if(ids.length>=3) riskRows.push({type:'Device | 设备', value:k.split('|')[1], count:ids.length, sample:ids.slice(0,6).join(', ')}); }
-  for (const [k,arr] of Object.entries(ipGroups)){ const ids=[...new Set(arr.map(r=>r.displayId))]; if(ids.length>=4) riskRows.push({type:'IP | IP', value:k.split('|')[1], count:ids.length, sample:ids.slice(0,6).join(', ')}); }
-  riskRows.sort((a,b)=>b.count-a.count);
+  const totalUsers = new Set(rows.map(r=>r.displayId)).size;
+  const totalRevenue = sum(rows.map(r=>r.price));
+  const totalOrders = rows.length;
 
-  const selectedUsers = new Set(rows.map(r=>r.displayId));
-  const orderShare = totalAllOrders ? rows.length / totalAllOrders * 100 : 0;
-  const revenueShare = totalAllRevenue ? sum(rows.map(r=>r.price)) / totalAllRevenue * 100 : 0;
-  const userPenetration = allUsersSet.size ? selectedUsers.size / allUsersSet.size * 100 : 0;
+  const usersWithBoth = userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).length;
+  const exclusiveUsers = selectedType==='all' ? 0 : userStats.filter(u=>u.types.size===1 && u.types.has(selectedType)).length;
+  const selectedStats = selectedType==='all' ? null : typeStats[selectedType];
+  const orderShare = selectedType==='all' ? 100 : (selectedStats.orders/totalAllOrders*100 || 0);
+  const revenueShare = selectedType==='all' ? 100 : (selectedStats.revenue/totalAllRevenue*100 || 0);
+  const userPenetration = selectedType==='all' ? 100 : (selectedStats.users.size/totalAllUsersSet.size*100 || 0);
 
-  let exclusiveUsers = 0;
-  if (selectedType !== 'all'){
-    const allByUser = byGroup(allRows, r=>r.displayId);
-    exclusiveUsers = Object.values(allByUser).filter(arr => arr.every(r=>r.typeClass===selectedType)).length;
-  }
-
-  const typeUserGroups = ['gold','gems','mixed'].map(type=>{
-    let usersSubset = userStats.filter(u=> type==='mixed' ? (u.dominantType!=='gold' && u.dominantType!=='gems') : u.dominantType===type);
-    const avgDays = usersSubset.length ? sum(usersSubset.map(u=>Math.floor((Date.now()-u.lastPay.getTime())/86400000)))/usersSubset.length : 0;
-    return {
-      label: type==='gold' ? 'Gold-dominant | 金币主导' : type==='gems' ? 'Gems-dominant | 宝石主导' : 'Karma | 混合',
-      users: usersSubset.length,
-      revenue: sum(usersSubset.map(u=>u.totalRev)),
-      orders: sum(usersSubset.map(u=>u.orders)),
-      avgOrder: usersSubset.length ? sum(usersSubset.map(u=>u.totalRev))/sum(usersSubset.map(u=>u.orders)||[1]) : 0,
-      avgDays
-    };
-  });
+  const typeUserGroups = [
+    {label:'Gold baskın | 金币主导', users:userStats.filter(u=>u.dominantType==='gold').length, revenue:sum(userStats.filter(u=>u.dominantType==='gold').map(u=>u.totalRev)), orders:sum(userStats.filter(u=>u.dominantType==='gold').map(u=>u.orders)), avgDays:sum(userStats.filter(u=>u.dominantType==='gold').map(u=>u.daysSinceLast))/Math.max(1,userStats.filter(u=>u.dominantType==='gold').length)},
+    {label:'Gems baskın | 宝石主导', users:userStats.filter(u=>u.dominantType==='gems').length, revenue:sum(userStats.filter(u=>u.dominantType==='gems').map(u=>u.totalRev)), orders:sum(userStats.filter(u=>u.dominantType==='gems').map(u=>u.orders)), avgDays:sum(userStats.filter(u=>u.dominantType==='gems').map(u=>u.daysSinceLast))/Math.max(1,userStats.filter(u=>u.dominantType==='gems').length)},
+    {label:'Karma kullanıcı | 混合用户', users:usersWithBoth, revenue:sum(userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).map(u=>u.totalRev)), orders:sum(userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).map(u=>u.orders)), avgDays:sum(userStats.filter(u=>u.types.has('gold') && u.types.has('gems')).map(u=>u.daysSinceLast))/Math.max(1,usersWithBoth)}
+  ].map(g=>({...g, avgOrder:g.orders?g.revenue/g.orders:0}));
 
   return {
-    selectedType,
-    selectedLabel: typeLabel(selectedType),
-    totalOrders: rows.length,
-    totalUsers: selectedUsers.size,
-    totalRevenue: sum(rows.map(r=>r.price)),
-    avgOrder: rows.length ? sum(rows.map(r=>r.price))/rows.length : 0,
-    orderShare, revenueShare, userPenetration, exclusiveUsers,
-    daily:[...daily.values()].sort((a,b)=>a.day.localeCompare(b.day)),
-    methods:[...methods.entries()].sort((a,b)=>b[1]-a[1]),
-    hours, latBuckets, packages, userStats, loyalUsers, highUsers, highThreshold, cohort, weeklyList, riskRows, typeStats, typeDaily, typeUserGroups,
-    totalAllUsers: allUsersSet.size, totalAllRevenue, totalAllOrders
+    selectedType, selectedLabel:typeLabel(selectedType), rows, totalUsers, totalRevenue, totalOrders, avgOrder: totalOrders ? totalRevenue/totalOrders : 0,
+    daily, methods, hours:hourArr, latBuckets:latencyBuckets, userStats, loyalUsers, highUsers, packages, riskRows,
+    typeStats, typeDaily, totalAllUsers: totalAllUsersSet.size, totalAllOrders, totalAllRevenue, usersWithBoth, exclusiveUsers, orderShare, revenueShare, userPenetration, typeUserGroups, weeklyList
   };
 }
 function destroyChart(id){ if(state.charts[id]) state.charts[id].destroy(); }
-function makeChart(id, config){ destroyChart(id); state.charts[id]=new Chart(el(id), config); }
+function makeChart(id, config){
+  destroyChart(id);
+  config.options = config.options || {};
+  config.options.animation = Object.assign({duration:950,easing:'easeOutQuart'}, config.options.animation||{});
+  state.charts[id]=new Chart(el(id), config);
+}
 function colorList(n){ const base=['#18c7ff','#3b82f6','#ffcc00','#23c27f','#ff7a59','#a78bfa','#f472b6','#22d3ee','#fb7185','#f59e0b']; return Array.from({length:n},(_,i)=>base[i%base.length]); }
-function chartOpts(){ return { responsive:true, maintainAspectRatio:false, scales:{ x:{ticks:{color:'#d7e8ff',maxRotation:0,autoSkip:true}}, y:{ticks:{color:'#d7e8ff'}} }, plugins:{ legend:{labels:{color:'#eef4ff'}} } }; }
-function chartOptsDual(){ return { responsive:true, maintainAspectRatio:false, scales:{ x:{ticks:{color:'#d7e8ff'}}, y:{ticks:{color:'#d7e8ff'}}, y1:{position:'right', grid:{drawOnChartArea:false}, ticks:{color:'#d7e8ff'}} }, plugins:{ legend:{labels:{color:'#eef4ff'}} } }; }
-function chartOptsStacked(){ return { responsive:true, maintainAspectRatio:false, scales:{ x:{stacked:true,ticks:{color:'#d7e8ff'}}, y:{stacked:true,ticks:{color:'#d7e8ff'}} }, plugins:{ legend:{labels:{color:'#eef4ff'}} } }; }
+function axisMoney(v){ return '$' + Number(v).toLocaleString('tr-TR'); }
+function axisCount(v){ return Number(v).toLocaleString('tr-TR'); }
+function chartBase(){
+  return {
+    responsive:true,
+    maintainAspectRatio:false,
+    interaction:{mode:'index',intersect:false},
+    elements:{line:{borderWidth:3},point:{radius:0,hoverRadius:5,hitRadius:12},bar:{borderRadius:8,borderSkipped:false,maxBarThickness:26}},
+    plugins:{
+      legend:{position:'bottom',labels:{color:'#eef4ff',usePointStyle:true,pointStyle:'circle',padding:18,boxWidth:10}},
+      tooltip:{
+        backgroundColor:'rgba(7,17,31,.96)',
+        titleColor:'#ffffff',
+        bodyColor:'#dfefff',
+        borderColor:'rgba(94,147,219,.45)',
+        borderWidth:1,
+        padding:12,
+        displayColors:true,
+        cornerRadius:12
+      }
+    },
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#d7e8ff',maxRotation:0,autoSkip:true,maxTicksLimit:12}},
+      y:{grid:{color:'rgba(110,145,194,.14)'},ticks:{color:'#d7e8ff'}}
+    }
+  };
+}
+function chartOpts(){
+  const o = chartBase();
+  o.scales.y.ticks.callback = v=>axisMoney(v);
+  return o;
+}
+function chartOptsDual(){
+  const o = chartBase();
+  o.scales.y.ticks.callback = v=>axisMoney(v);
+  o.scales.y1 = {position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d7e8ff',callback:v=>axisCount(v)}};
+  return o;
+}
+function chartOptsCount(){
+  const o = chartBase();
+  o.scales.y.ticks.callback = v=>axisCount(v);
+  return o;
+}
+function chartOptsPct(max=100){
+  const o = chartBase();
+  o.scales.y.max=max;
+  o.scales.y.ticks.callback = v=>v + '%';
+  return o;
+}
+function chartOptsStacked(isMoney=false){
+  const o = chartBase();
+  o.scales.x.stacked = true;
+  o.scales.y.stacked = true;
+  o.scales.y.ticks.callback = v=>isMoney ? axisMoney(v) : axisCount(v);
+  return o;
+}
 function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function escapeAttr(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
@@ -489,7 +545,7 @@ function renderSinglePackageChart(){
     labels = a.weeklyList;
     data = labels.map(w=> metric==='qty' ? (p.weeklyQtyObj[w]||0) : sum(state.rows.filter(r=>r.productName===p.name && r.week===w && (state.filteredType==='all' || r.typeClass===state.filteredType)).map(r=>r.price)));
   }
-  makeChart('singlePackageChart',{type:'line',data:{labels,datasets:[{label:`${pkgName} - ${metric==='qty'?'Adet | 数量':'Ciro | 营收'}`,data,borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.18)',fill:true,tension:.25}]},options:chartOpts()});
+  makeChart('singlePackageChart',{type:'line',data:{labels,datasets:[{label:`${pkgName} - ${metric==='qty'?'Adet | 数量':'Ciro | 营收'}`,data,borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.14)',fill:true,tension:.34,cubicInterpolationMode:'monotone'}]},options: metric==='qty' ? chartOptsCount() : chartOpts()});
 }
 function renderHighUser(){
   const a=state.analysis;
@@ -503,28 +559,13 @@ function renderHighUser(){
   const u = a.highUsers.find(x=>x.id===id); if(!u) return;
   const packageNames = [...new Set(u.highRows.map(r=>r.productName))];
   const weeks = [...new Set(u.highRows.map(r=>r.week))].sort();
-  makeChart('highUserChart',{type:'bar',data:{labels:weeks,datasets:packageNames.map((p,i)=>({label:p,data:weeks.map(w=>u.highRows.filter(r=>r.week===w && r.productName===p).length),backgroundColor:colorList(packageNames.length)[i],stack:'s'}))},options:chartOptsStacked()});
+  makeChart('highUserChart',{type:'bar',data:{labels:weeks,datasets:packageNames.map((p,i)=>({label:p,data:weeks.map(w=>u.highRows.filter(r=>r.week===w && r.productName===p).length),backgroundColor:colorList(packageNames.length)[i],stack:'s'}))},options:chartOptsStacked(false)});
   let html = '<table><thead><tr><th>Hafta | 周</th>' + packageNames.map(p=>`<th>${escapeHtml(p)}</th>`).join('') + '</tr></thead><tbody>';
   html += weeks.map(w=>'<tr><td>'+w+'</td>' + packageNames.map(p=>`<td>${u.highRows.filter(r=>r.week===w && r.productName===p).length}</td>`).join('') + '</tr>').join('');
   html += '</tbody></table>';
   el('highUserMatrix').innerHTML = html;
 }
-function renderCohort(){
-  const a = state.analysis;
-  if (!a.cohort.length){ el('cohortWrap').innerHTML='Cohort için yeterli veri yok. | 没有足够数据生成 cohort。'; return; }
-  let allWeeks=[...new Set(a.cohort.flatMap(r=>r.values.map(v=>v.week)))];
-  let html='<table><thead><tr><th>Cohort | 分组</th><th>Boyut | 规模</th>' + allWeeks.map(w=>`<th>${w}</th>`).join('') + '</tr></thead><tbody>';
-  html += a.cohort.map(r=>{
-    const map=Object.fromEntries(r.values.map(v=>[v.week,v.pct]));
-    return '<tr><td>'+r.cohort+'</td><td>'+fmtNum(r.size)+'</td>' + allWeeks.map(w=>{
-      if (map[w] == null || w < r.cohort) return '<td>-</td>';
-      const pct = map[w], alpha=Math.max(.12,pct/100);
-      return `<td style="background:rgba(24,199,255,${alpha})">${pct}%</td>`;
-    }).join('') + '</tr>';
-  }).join('');
-  html += '</tbody></table>';
-  el('cohortWrap').innerHTML = html;
-}
+
 function render(){
   if (!state.rows.length){ setStatus('Henüz veri yüklenmedi. | 尚未加载数据。'); return; }
   const filtered = getRowsByType(state.filteredType);
@@ -541,32 +582,87 @@ function render(){
 
   renderTypeKpis(a);
 
-  makeChart('dailyChart',{type:'line',data:{labels:a.daily.map(x=>x.day),datasets:[{label:'Ciro | 营收',data:a.daily.map(x=>x.rev),borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.18)',yAxisID:'y',fill:true,tension:.25},{label:'Sipariş | 订单',data:a.daily.map(x=>x.orders),borderColor:'#ffcc00',backgroundColor:'transparent',yAxisID:'y1',tension:.25}]},options:chartOptsDual()});
+  makeChart('dailyChart',{type:'line',data:{labels:a.daily.map(x=>x.day),datasets:[
+    {label:'Ciro | 营收',data:a.daily.map(x=>x.rev),borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.14)',yAxisID:'y',fill:true,tension:.34,cubicInterpolationMode:'monotone'},
+    {label:'Sipariş | 订单',data:a.daily.map(x=>x.orders),borderColor:'#ffcc00',backgroundColor:'rgba(255,204,0,.06)',yAxisID:'y1',fill:false,tension:.34,cubicInterpolationMode:'monotone'}
+  ]},options:chartOptsDual()});
 
   if (state.filteredType === 'all'){
     const days = [...new Set([...a.typeDaily.gold.keys(), ...a.typeDaily.gems.keys()])].sort();
     makeChart('typeCompareChart',{type:'line',data:{labels:days,datasets:[
-      {label:'Gold ciro | 金币营收',data:days.map(d=>(a.typeDaily.gold.get(d)?.revenue)||0),borderColor:'#ffcc00',backgroundColor:'rgba(255,204,0,.12)',fill:false,tension:.25},
-      {label:'Gems ciro | 宝石营收',data:days.map(d=>(a.typeDaily.gems.get(d)?.revenue)||0),borderColor:'#35d399',backgroundColor:'rgba(53,211,153,.12)',fill:false,tension:.25}
+      {label:'Gold ciro | 金币营收',data:days.map(d=>(a.typeDaily.gold.get(d)?.revenue)||0),borderColor:'#ffcc00',backgroundColor:'rgba(255,204,0,.10)',fill:true,tension:.32,cubicInterpolationMode:'monotone'},
+      {label:'Gems ciro | 宝石营收',data:days.map(d=>(a.typeDaily.gems.get(d)?.revenue)||0),borderColor:'#35d399',backgroundColor:'rgba(53,211,153,.08)',fill:true,tension:.32,cubicInterpolationMode:'monotone'}
     ]},options:chartOpts()});
   } else {
     const selected = a.selectedType;
     const baseOrders = a.totalAllOrders ? (a.totalOrders / a.totalAllOrders * 100) : 0;
     const baseRevenue = a.totalAllRevenue ? (a.totalRevenue / a.totalAllRevenue * 100) : 0;
-    makeChart('typeCompareChart',{type:'bar',data:{labels:['Sipariş payı | 订单占比','Ciro payı | 营收占比','Kullanıcı penetrasyonu | 用户渗透率'],datasets:[{label:a.selectedLabel,data:[baseOrders,baseRevenue,a.userPenetration],backgroundColor:selected==='gold' ? '#ffcc00' : '#35d399'}]},options:chartOpts()});
+    makeChart('typeCompareChart',{type:'bar',data:{labels:['Sipariş payı | 订单占比','Ciro payı | 营收占比','Kullanıcı penetrasyonu | 用户渗透率'],datasets:[{label:a.selectedLabel,data:[baseOrders,baseRevenue,a.userPenetration],backgroundColor:selected==='gold' ? '#ffcc00' : '#35d399'}]},options:chartOptsPct(100)});
   }
 
   makeChart('methodChart',{type:'bar',data:{labels:a.methods.map(x=>x[0]),datasets:[{label:'Ciro | 营收',data:a.methods.map(x=>x[1]),backgroundColor:colorList(a.methods.length)}]},options:chartOpts()});
-  makeChart('hourChart',{type:'bar',data:{labels:[...Array(24).keys()].map(h=>String(h).padStart(2,'0')+':00'),datasets:[{label:'Sipariş | 订单',data:a.hours,backgroundColor:'#3b82f6'}]},options:chartOpts()});
-  makeChart('latencyChart',{type:'bar',data:{labels:Object.keys(a.latBuckets),datasets:[{label:'Sipariş | 订单',data:Object.values(a.latBuckets),backgroundColor:'#ffb84d'}]},options:chartOpts()});
+  makeChart('hourChart',{type:'bar',data:{labels:[...Array(24).keys()].map(h=>String(h).padStart(2,'0')+':00'),datasets:[{label:'Sipariş | 订单',data:a.hours,backgroundColor:'#3b82f6'}]},options:chartOptsCount()});
+  makeChart('latencyChart',{type:'bar',data:{labels:Object.keys(a.latBuckets),datasets:[{label:'Sipariş | 订单',data:Object.values(a.latBuckets),backgroundColor:'#ffb84d'}]},options:chartOptsCount()});
 
   const loyaltyBands=['Tam tek paket | 完全单礼包','Yüksek sadakat | 高忠诚','Baskın paketli | 主导礼包','Karışık | 混合'];
   const loyaltyCounts=loyaltyBands.map(k=>a.userStats.filter(u=>u.loyalBand===k).length);
-  makeChart('loyaltyChart',{type:'doughnut',data:{labels:loyaltyBands,datasets:[{data:loyaltyCounts,backgroundColor:['#18c7ff','#23c27f','#ffcc00','#ff6677']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#eef4ff'}}}}});
+  const loyaltyTotal = loyaltyCounts.reduce((s,v)=>s+v,0) || 1;
+  const loyaltyRows = loyaltyBands.map((label,i)=>({label,count:loyaltyCounts[i],pct:(loyaltyCounts[i]/loyaltyTotal*100)}))
+                                .sort((x,y)=>y.count-x.count);
+  const dominantLoyal = loyaltyRows[0] || {label:'-',count:0,pct:0};
+  const concentrated = ((loyaltyRows[0]?.pct||0) + (loyaltyRows[1]?.pct||0)).toFixed(1);
+  const pureUsers = loyaltyBands[0];
+  const pureCount = loyaltyCounts[0] || 0;
+  const loyaltyRowEl = el('loyaltyKpiRow');
+  if (loyaltyRowEl) loyaltyRowEl.innerHTML = `
+    <div class="loyalty-kpi">
+      <div class="mini">Baskın sadakat bandı | 主导忠诚带</div>
+      <div class="big">${dominantLoyal.pct.toFixed(1)}%</div>
+      <div class="sub">${dominantLoyal.label}</div>
+    </div>
+    <div class="loyalty-kpi">
+      <div class="mini">İlk iki bandın toplamı | 前两档合计</div>
+      <div class="big">${concentrated}%</div>
+      <div class="sub">Yoğunlaşma göstergesi | 集中度指标</div>
+    </div>
+    <div class="loyalty-kpi">
+      <div class="mini">Tam tek paket kullanıcı | 完全单礼包用户</div>
+      <div class="big">${fmtNum(pureCount)}</div>
+      <div class="sub">${((pureCount/loyaltyTotal)*100).toFixed(1)}% kullanıcı | 用户</div>
+    </div>
+  `;
+  makeChart('loyaltyChart',{
+    type:'bar',
+    data:{
+      labels:loyaltyRows.map(x=>x.label),
+      datasets:[
+        {label:'Kullanıcı sayısı | 用户数',data:loyaltyRows.map(x=>x.count),backgroundColor:['#18c7ff','#23c27f','#ffcc00','#ff6677']},
+        {label:'Oran % | 占比 %',data:loyaltyRows.map(x=>Number(x.pct.toFixed(1))),type:'line',borderColor:'#d7e8ff',backgroundColor:'transparent',yAxisID:'y1',tension:.28,pointRadius:4,pointHoverRadius:5}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      elements:{bar:{borderRadius:10,borderSkipped:false,maxBarThickness:34},line:{borderWidth:2.5}},
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#eef4ff',usePointStyle:true,pointStyle:'circle',padding:18}},
+        tooltip:{
+          backgroundColor:'rgba(7,17,31,.96)',titleColor:'#fff',bodyColor:'#dfefff',borderColor:'rgba(94,147,219,.45)',borderWidth:1,padding:12,cornerRadius:12,
+          callbacks:{label:(ctx)=>ctx.datasetIndex===0?`Kullanıcı | 用户: ${fmtNum(ctx.parsed.y)}`:`Oran | 占比: %${ctx.parsed.y}`}
+        }
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#d7e8ff',font:{size:12,weight:'600'}}},
+        y:{beginAtZero:true,grid:{color:'rgba(110,145,194,.14)'},ticks:{color:'#d7e8ff',callback:v=>fmtNum(v)},title:{display:true,text:'Kullanıcı sayısı | 用户数',color:'#9cb0d1'}},
+        y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d7e8ff',callback:v=>`%${v}`},title:{display:true,text:'Oran | 占比',color:'#9cb0d1'},suggestedMax:100}
+      }
+    }
+  });
 
   const topPackages=a.packages.slice(0,8), days=a.daily.map(x=>x.day);
-  makeChart('pkgQtyChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyQtyObj[d]||0),backgroundColor:colorList(8)[i],stack:'qty'}))},options:chartOptsStacked()});
-  makeChart('pkgRevChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyRevObj[d]||0),backgroundColor:colorList(8)[i],stack:'rev'}))},options:chartOptsStacked()});
+  makeChart('pkgQtyChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyQtyObj[d]||0),backgroundColor:colorList(8)[i],stack:'qty'}))},options:chartOptsStacked(false)});
+  makeChart('pkgRevChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyRevObj[d]||0),backgroundColor:colorList(8)[i],stack:'rev'}))},options:chartOptsStacked(true)});
 
   el('packageSelect').innerHTML = a.packages.length ? a.packages.map((p,i)=>`<option value="${escapeAttr(p.name)}" ${i===0?'selected':''}>${escapeHtml(p.name)}</option>`).join('') : '';
   renderSinglePackageChart();
@@ -577,7 +673,6 @@ function render(){
   el('highUserSelect').innerHTML = a.highUsers.length ? a.highUsers.slice(0,100).map((u,i)=>`<option value="${escapeAttr(u.id)}" ${i===0?'selected':''}>${escapeHtml(u.id)} | ${fmtMoney(u.highRev)}</option>`).join('') : '<option value="">Kullanıcı yok | 无用户</option>';
   renderHighUser();
 
-  renderCohort();
   el('riskBody').innerHTML = a.riskRows.length ? a.riskRows.slice(0,30).map(r=>`<tr><td>${r.type}</td><td>${escapeHtml(r.value)}</td><td>${fmtNum(r.count)}</td><td>${escapeHtml(r.sample)}</td></tr>`).join('') : '<tr><td colspan="4">Eşik üstü paylaşımlı IP / cihaz kümesi bulunmadı. | 未发现超过阈值的共享 IP / 设备簇。</td></tr>';
 
   el('packageSummaryBody').innerHTML = a.packages.length ? a.packages.slice(0,30).map(p=>{
@@ -593,6 +688,216 @@ function render(){
   el('typeUserSummaryBody').innerHTML = a.typeUserGroups.map(g=>`<tr><td>${g.label}</td><td>${fmtNum(g.users)}</td><td>${fmtMoney(g.revenue)}</td><td>${fmtNum(g.orders)}</td><td>${fmtMoney(g.avgOrder)}</td><td>${g.avgDays.toFixed(1)}</td></tr>`).join('');
 
   document.querySelectorAll('.seg-btn').forEach(btn=>btn.classList.toggle('active', btn.dataset.type===state.filteredType));
+}
+function currentSectionStates(){
+  return [...document.querySelectorAll('.section-toggle')].map((d,i)=>({
+    index:i+1,
+    title:(d.querySelector('summary span')?.textContent || '').trim(),
+    open:d.hasAttribute('open')
+  }));
+}
+async function exportPdfReport(){
+  if(!state.analysis || !state.rows.length){
+    setStatus('Önce veri yüklemelisin. | 请先加载数据。', true);
+    return;
+  }
+  if(!window.jspdf || !window.jspdf.jsPDF){
+    setStatus('PDF kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene. | PDF 库未能加载，请刷新页面后重试。', true);
+    return;
+  }
+  if(!window.html2canvas){
+    setStatus('Görsel PDF modülü yüklenemedi. Sayfayı yenileyip tekrar dene. | 图像 PDF 模块未能加载，请刷新页面后重试。', true);
+    return;
+  }
+
+  setStatus('PDF hazırlanıyor, lütfen bekle... | PDF 正在生成，请稍候...');
+
+  // wait one frame so charts finish painting
+  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+  const { jsPDF } = window.jspdf;
+  const selectedMap = {all:'Tümü | 全部', gold:'Gold | 金币', gems:'Gems | 宝石'};
+
+  // Create off-screen export DOM from live page so fonts/Chinese/charts remain as rendered
+  const exportRoot = document.createElement('div');
+  exportRoot.style.position = 'fixed';
+  exportRoot.style.left = '-100000px';
+  exportRoot.style.top = '0';
+  exportRoot.style.width = '1440px';
+  exportRoot.style.background = '#07111f';
+  exportRoot.style.zIndex = '-1';
+  exportRoot.style.padding = '0';
+  exportRoot.style.margin = '0';
+
+  const content = document.createElement('div');
+  content.style.width = '1440px';
+  content.style.background = 'linear-gradient(180deg,#07111f 0%,#09162a 100%)';
+  content.style.color = '#eef4ff';
+  content.style.fontFamily = 'Inter, Arial, sans-serif';
+  content.style.padding = '24px';
+
+  const hero = document.createElement('div');
+  hero.style.background = 'linear-gradient(180deg,rgba(17,37,66,.95),rgba(11,24,42,.95))';
+  hero.style.border = '1px solid #223a5f';
+  hero.style.borderRadius = '22px';
+  hero.style.padding = '22px 24px';
+  hero.style.marginBottom = '18px';
+  hero.innerHTML = `
+    <div style="font-size:56px;font-weight:900;letter-spacing:2px;line-height:1;
+      background:linear-gradient(90deg,#18c7ff 0%,#12d3ff 28%,#4fe19a 56%,#ffcc00 100%);
+      -webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block;">YAVER</div>
+    <div style="margin-top:12px;font-size:28px;font-weight:800;color:#eef4ff;">Ödeme İstihbarat Paneli | 支付情报面板</div>
+    <div style="margin-top:8px;font-size:16px;color:#9cb0d1;">Seçili görünüm: ${selectedMap[state.filteredType]} | 已选视图：${selectedMap[state.filteredType]}</div>
+    <div style="margin-top:4px;font-size:14px;color:#9cb0d1;">Oluşturma zamanı: ${new Date().toLocaleString('tr-TR')} | 生成时间：${new Date().toLocaleString('tr-TR')}</div>
+  `;
+  content.appendChild(hero);
+
+  function cloneBlock(node){
+    const clone = node.cloneNode(true);
+
+    // Replace cloned canvas with image rendered from live canvas
+    const cloneCanvases = [...clone.querySelectorAll('canvas')];
+    const liveCanvases = [...node.querySelectorAll('canvas')];
+
+    cloneCanvases.forEach((c, i)=>{
+      const live = liveCanvases[i];
+      const img = document.createElement('img');
+      let src = '';
+      try{
+        src = live ? live.toDataURL('image/png', 1.0) : '';
+      }catch(e){
+        src = '';
+      }
+      img.src = src;
+      const rect = live ? live.getBoundingClientRect() : {width: c.width || 800, height: c.height || 340};
+      img.style.display = 'block';
+      img.style.width = (rect.width || 800) + 'px';
+      img.style.maxWidth = '100%';
+      img.style.height = 'auto';
+      img.style.minHeight = '240px';
+      img.style.objectFit = 'contain';
+      img.style.background = 'transparent';
+      c.parentNode.replaceChild(img, c);
+    });
+
+    // keep details content expanded in export
+    clone.querySelectorAll('details').forEach(d=>d.setAttribute('open','open'));
+    clone.querySelectorAll('summary').forEach(s=>s.style.display='none');
+
+    return clone;
+  }
+
+  const kpis = document.getElementById('kpis');
+  if(kpis && kpis.children.length){
+    content.appendChild(cloneBlock(kpis));
+  }
+
+  [...document.querySelectorAll('.section-toggle')].forEach((details, idx)=>{
+    if(!details.hasAttribute('open')) return;
+    const titleText = (details.querySelector('summary span')?.textContent || `Bölüm ${idx+1}`).trim();
+    const title = document.createElement('h2');
+    title.textContent = titleText;
+    title.style.fontSize = '24px';
+    title.style.margin = '28px 0 14px';
+    title.style.color = '#eef4ff';
+    content.appendChild(title);
+
+    const body = details.querySelector('.section-body');
+    if(body){
+      const bodyWrap = document.createElement('div');
+      bodyWrap.appendChild(cloneBlock(body));
+      content.appendChild(bodyWrap);
+    }
+  });
+
+  exportRoot.appendChild(content);
+  document.body.appendChild(exportRoot);
+
+  try{
+    // wait for dataURL images to settle
+    const imgs = [...exportRoot.querySelectorAll('img')];
+    await Promise.all(imgs.map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(res => {
+        img.onload = ()=>res();
+        img.onerror = ()=>res();
+      });
+    }));
+
+    const canvas = await html2canvas(content, {
+      backgroundColor: '#07111f',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      windowWidth: 1600,
+      width: content.scrollWidth,
+      height: content.scrollHeight,
+      scrollX: 0,
+      scrollY: 0
+    });
+
+    const pdf = new jsPDF({orientation:'landscape', unit:'pt', format:'a4'});
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+
+    const headerH = 58;
+    const margin = 24;
+    const usableW = pageW - margin*2;
+    const usableH = pageH - margin*2 - headerH - 8;
+
+    const pixelsPerPt = canvas.width / usableW;
+    const sliceHeightPx = Math.floor(usableH * pixelsPerPt);
+
+    const pageCanvas = document.createElement('canvas');
+    const pageCtx = pageCanvas.getContext('2d');
+
+    let sourceY = 0;
+    let page = 0;
+
+    while(sourceY < canvas.height){
+      if(page > 0) pdf.addPage();
+
+      // header on every page, Latin only for PDF font safety
+      pdf.setFillColor(13,27,46);
+      pdf.roundedRect(margin, margin, pageW - margin*2, headerH, 14, 14, 'F');
+      pdf.setFont('helvetica','bold');
+      pdf.setTextColor(24,199,255);
+      pdf.setFontSize(24);
+      pdf.text('YAVER', margin + 18, margin + 36);
+      pdf.setFont('helvetica','bold');
+      pdf.setTextColor(238,244,255);
+      pdf.setFontSize(15);
+      pdf.text(`Odeme Istihbarat Paneli | ${selectedMap[state.filteredType]}`, margin + 110, margin + 24);
+      pdf.setFont('helvetica','normal');
+      pdf.setTextColor(156,176,209);
+      pdf.setFontSize(10);
+      pdf.text('PDF Report', margin + 110, margin + 40);
+
+      const remainingPx = canvas.height - sourceY;
+      const currentSlicePx = Math.min(sliceHeightPx, remainingPx);
+
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = currentSlicePx;
+      pageCtx.clearRect(0,0,pageCanvas.width,pageCanvas.height);
+      pageCtx.drawImage(canvas, 0, sourceY, canvas.width, currentSlicePx, 0, 0, canvas.width, currentSlicePx);
+
+      const pageImgData = pageCanvas.toDataURL('image/png');
+      const pageImgH = currentSlicePx * usableW / canvas.width;
+      pdf.addImage(pageImgData, 'PNG', margin, margin + headerH + 8, usableW, pageImgH, undefined, 'FAST');
+
+      sourceY += currentSlicePx;
+      page += 1;
+    }
+
+    pdf.save(`yaver-rapor-${state.filteredType}-${new Date().toISOString().slice(0,10)}.pdf`);
+    setStatus('PDF hazırlandı ve indirildi. Grafikler ve Çince metinler görsel olarak korundu. | PDF 已生成并下载，图表与中文内容已按视觉保留。');
+  }catch(err){
+    console.error(err);
+    setStatus('PDF oluşturma hatası | PDF 生成错误: ' + err.message, true);
+  }finally{
+    exportRoot.remove();
+  }
 }
 async function loadFile(file){
   try{
@@ -611,6 +916,7 @@ async function loadFile(file){
   }
 }
 el('fileInput').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadFile(f); });
+el('pdfBtn').addEventListener('click', exportPdfReport);
 el('packageSelect').addEventListener('change', renderSinglePackageChart);
 el('packageMetricSelect').addEventListener('change', renderSinglePackageChart);
 el('packageGranularitySelect').addEventListener('change', renderSinglePackageChart);
@@ -623,7 +929,3 @@ dz.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile
 </script>
 </body>
 </html>
-'''
-out = Path('/mnt/data/yaver_payment_intelligence_v8_filters_sections.html')
-out.write_text(html, encoding='utf-8')
-print(out, out.stat().st_size)

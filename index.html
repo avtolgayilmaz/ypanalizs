@@ -1,970 +1,1443 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>YAVER Ödeme İstihbarat Paneli | YAVER 支付情报面板</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
 :root{
-  --bg:#07111f; --panel:#0d1b2e; --panel2:#112542; --line:#223a5f; --muted:#9cb0d1; --text:#eef4ff;
-  --brand:#18c7ff; --brand2:#3b82f6; --gold:#ffcc00; --gems:#35d399; --warn:#ffb84d; --bad:#ff6677; --chip:#162b4b;
+  --bg:#07111f;
+  --panel:#0d1b2e;
+  --panel2:#112542;
+  --line:#223a5f;
+  --muted:#9cb0d1;
+  --text:#eef4ff;
+  --brand:#18c7ff;
+  --brand2:#3b82f6;
+  --gold:#ffcc00;
+  --gems:#35d399;
+  --bad:#ff6677;
+  --warn:#ffb84d;
 }
+
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:
-radial-gradient(1200px 700px at 8% -10%, rgba(24,199,255,.14), transparent 55%),
-radial-gradient(900px 600px at 100% 0%, rgba(59,130,246,.12), transparent 50%),
-linear-gradient(180deg,#07111f 0,#09162a 52%,#07111f 100%);color:var(--text);overflow-x:hidden}
-body::before,body::after{content:"";position:fixed;inset:auto;pointer-events:none;z-index:0;filter:blur(40px);opacity:.35}
-body::before{width:320px;height:320px;left:-80px;top:140px;background:radial-gradient(circle,#18c7ff 0,transparent 70%);animation:floatOrb 16s ease-in-out infinite}
-body::after{width:360px;height:360px;right:-100px;top:420px;background:radial-gradient(circle,#3b82f6 0,transparent 72%);animation:floatOrb 20s ease-in-out infinite reverse}
-header,main{position:relative;z-index:1}
-header{position:sticky;top:0;z-index:30;backdrop-filter:blur(14px);background:rgba(7,17,31,.82);border-bottom:1px solid rgba(77,110,155,.35);box-shadow:0 14px 30px rgba(0,0,0,.18)}
-.wrap{max-width:1600px;margin:0 auto;padding:0 20px}
-.head{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:18px 0;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:26px;min-width:0;flex:1 1 900px}
-.wordmark-wrap{flex:0 0 420px;max-width:100%;display:flex;align-items:center;justify-content:center;min-height:150px}
-.wordmark{font-weight:900;font-size:92px;line-height:1;letter-spacing:2px;margin:0;white-space:nowrap;background:linear-gradient(90deg,#18c7ff 0%,#12d3ff 28%,#4fe19a 56%,#ffcc00 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 12px 30px rgba(24,199,255,.18);animation:logoGlow 4.2s ease-in-out infinite}
-.brand-copy h1{margin:0;font-size:34px;line-height:1.1}
-.brand-copy p{margin:10px 0 0;color:var(--muted);max-width:860px;line-height:1.6}
-.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:center}
-button,.btn,select,input{font:inherit}
-.btn{border:none;background:rgba(17,37,66,.72);color:var(--text);padding:12px 16px;border-radius:14px;cursor:pointer;box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 10px 24px rgba(0,0,0,.18);transition:transform .22s ease, box-shadow .22s ease, filter .22s ease}
-.btn:hover{filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 16px 28px rgba(0,0,0,.22)}
-.btn.primary{background:linear-gradient(90deg,var(--brand),var(--brand2));color:#04101f;font-weight:800}
-main{padding:24px 0 52px}
-.panel{background:linear-gradient(180deg,rgba(17,37,66,.88),rgba(10,21,38,.9));border:1px solid rgba(73,108,158,.35);border-radius:22px;padding:24px;box-shadow:0 18px 44px rgba(0,0,0,.22);position:relative;overflow:hidden;animation:fadeUp .55s ease both}
-.panel::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,rgba(24,199,255,.6),transparent)}
-.hero{display:grid;grid-template-columns:1fr;gap:18px;margin-bottom:18px}
-.uploader{border:2px dashed rgba(86,129,190,.5);min-height:200px;display:flex;align-items:center;justify-content:center;text-align:center;transition:.22s ease;background:linear-gradient(180deg,rgba(12,27,47,.46),rgba(11,23,41,.2))}
-.uploader.drag{border-color:var(--brand);background:linear-gradient(180deg,rgba(24,199,255,.10),rgba(59,130,246,.06))}
-.uploader strong{display:block;font-size:20px;margin-bottom:10px}
-.small{color:var(--muted);font-size:13px}
-.hidden{display:none !important}
-.status{margin-top:12px;font-size:14px;color:var(--brand)}
-.loyalty-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:8px 0 14px}
-.loyalty-kpi{background:linear-gradient(180deg,rgba(13,27,46,.88),rgba(8,20,36,.92));border:1px solid rgba(72,107,156,.28);border-radius:16px;padding:12px 14px}
-.loyalty-kpi .mini{font-size:12px;color:var(--muted);margin-bottom:6px}
-.loyalty-kpi .big{font-size:24px;font-weight:900;line-height:1.05}
-.loyalty-kpi .sub{margin-top:6px;font-size:12px;color:var(--muted)}
-.filter-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:space-between}
-.filter-left{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-.filter-title{font-size:15px;color:var(--muted)}
-.segment-switch{display:flex;gap:8px;flex-wrap:wrap}
-.seg-btn{padding:10px 16px;border-radius:999px;background:#10213a;border:1px solid var(--line);color:var(--text);cursor:pointer;font-weight:700}
-.seg-btn.active[data-type="all"]{background:linear-gradient(90deg,#18c7ff,#3b82f6);color:#04101f}
-.seg-btn.active[data-type="gold"]{background:linear-gradient(90deg,#ffcc00,#ff9f0a);color:#271700}
-.seg-btn.active[data-type="gems"]{background:linear-gradient(90deg,#35d399,#10b981);color:#032115}
-.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:18px}
-.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.card{background:linear-gradient(180deg,rgba(13,27,46,.92),rgba(8,20,36,.96));border:1px solid rgba(72,107,156,.34);border-radius:22px;padding:20px;box-shadow:0 18px 38px rgba(0,0,0,.18);position:relative;overflow:hidden;transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;animation:fadeUp .7s ease both}
-.card::before{content:"";position:absolute;inset:0 0 auto 0;height:2px;background:linear-gradient(90deg,rgba(24,199,255,.0),rgba(24,199,255,.75),rgba(255,204,0,.55),rgba(24,199,255,0));opacity:.85}
-.card:hover{transform:translateY(-3px);box-shadow:0 24px 44px rgba(0,0,0,.24);border-color:rgba(98,141,201,.54)}
-.card h3{margin:0 0 14px;font-size:20px;line-height:1.35}
-.kpi .label{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.4px}
-.kpi .value{font-size:36px;font-weight:900;margin-top:8px;line-height:1.05}
-.kpi .sub{margin-top:10px;color:var(--muted);font-size:13px;line-height:1.55}
-.section-toggle{margin:24px 0 0}
-.section-toggle summary{list-style:none;cursor:pointer;padding:17px 22px;background:linear-gradient(180deg,rgba(17,37,66,.92),rgba(11,24,42,.9));border:1px solid rgba(73,108,158,.38);border-radius:18px;font-size:22px;font-weight:900;display:flex;align-items:center;justify-content:space-between;box-shadow:0 14px 30px rgba(0,0,0,.16);transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease}
-.section-toggle summary:hover{transform:translateY(-1px);border-color:rgba(96,144,208,.55);box-shadow:0 18px 32px rgba(0,0,0,.2)}
-.section-toggle summary::-webkit-details-marker{display:none}
-.section-toggle summary .hint{font-size:13px;font-weight:600;color:var(--muted)}
-.section-toggle[open] summary{border-bottom-left-radius:0;border-bottom-right-radius:0}
-.section-body{padding:16px 0 0}
-canvas{width:100% !important;height:360px !important}
-.table-wrap{overflow:auto;max-height:560px;border-radius:14px}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;vertical-align:top}
-th{position:sticky;top:0;background:#10213a;color:#eaf2ff;z-index:1}
-.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-select{background:#10213a;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
-.notice,.footer-note,.empty-note{font-size:13px;color:var(--muted);line-height:1.55}
-.legend-inline{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
-.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
-.dot.all{background:var(--brand)} .dot.gold{background:var(--gold)} .dot.gems{background:var(--gems)}
-.status.bad{color:#ff7b8f}
-.warn{color:var(--gold)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes logoGlow{0%,100%{filter:drop-shadow(0 0 0 rgba(24,199,255,.0))}50%{filter:drop-shadow(0 0 16px rgba(24,199,255,.18))}}
-@keyframes floatOrb{0%,100%{transform:translate3d(0,0,0)}50%{transform:translate3d(20px,-26px,0)}}
-@media (max-width:1100px){ .grid4,.grid3,.grid2,.loyalty-kpis{grid-template-columns:1fr} .head{justify-content:center} .brand{flex-direction:column;text-align:center} .wordmark-wrap{flex-basis:100%;min-height:100px} .wordmark{font-size:68px} }
-@media (max-width:640px){ .wordmark{font-size:44px;letter-spacing:1px} .brand-copy h1{font-size:28px} }
+
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif;
+  background:
+    radial-gradient(1000px 600px at 10% -10%,rgba(24,199,255,.14),transparent 55%),
+    radial-gradient(900px 600px at 100% 0%,rgba(59,130,246,.12),transparent 50%),
+    linear-gradient(180deg,#07111f 0,#09162a 55%,#07111f 100%);
+  color:var(--text);
+}
+
+header{
+  position:sticky;
+  top:0;
+  z-index:20;
+  backdrop-filter:blur(14px);
+  background:rgba(7,17,31,.86);
+  border-bottom:1px solid rgba(77,110,155,.35);
+}
+
+.wrap{
+  max-width:1600px;
+  margin:0 auto;
+  padding:0 20px;
+}
+
+.head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:20px;
+  padding:18px 0;
+  flex-wrap:wrap;
+}
+
+.brand{
+  display:flex;
+  gap:22px;
+  align-items:center;
+  min-width:0;
+}
+
+.logo{
+  font-size:64px;
+  font-weight:900;
+  letter-spacing:2px;
+  line-height:1;
+  background:linear-gradient(90deg,#18c7ff,#35d399,#ffcc00);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  white-space:nowrap;
+}
+
+h1{
+  margin:0;
+  font-size:28px;
+  line-height:1.2;
+}
+
+.subtitle{
+  margin:8px 0 0;
+  color:var(--muted);
+  line-height:1.5;
+}
+
+.actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+button,.btn,select,input{
+  font:inherit;
+}
+
+.btn{
+  border:none;
+  background:rgba(17,37,66,.78);
+  color:var(--text);
+  padding:11px 15px;
+  border-radius:12px;
+  cursor:pointer;
+  box-shadow:0 0 0 1px rgba(255,255,255,.06) inset,0 10px 22px rgba(0,0,0,.18);
+}
+
+.btn:hover{
+  filter:brightness(1.08);
+}
+
+.btn.primary{
+  background:linear-gradient(90deg,var(--brand),var(--brand2));
+  color:#04101f;
+  font-weight:800;
+}
+
+main{
+  padding:24px 0 50px;
+}
+
+.panel,.card{
+  background:linear-gradient(180deg,rgba(17,37,66,.88),rgba(8,20,36,.94));
+  border:1px solid rgba(73,108,158,.35);
+  border-radius:20px;
+  box-shadow:0 18px 44px rgba(0,0,0,.22);
+}
+
+.panel{
+  padding:22px;
+  margin-bottom:18px;
+}
+
+.uploader{
+  min-height:180px;
+  border:2px dashed rgba(86,129,190,.52);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+}
+
+.uploader.drag{
+  border-color:var(--brand);
+  background:rgba(24,199,255,.08);
+}
+
+.hidden{
+  display:none;
+}
+
+.small{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+}
+
+.status{
+  margin-top:12px;
+  color:var(--brand);
+  font-size:14px;
+}
+
+.status.bad{
+  color:var(--bad);
+}
+
+.filter-bar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+.segment-switch{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.seg-btn{
+  padding:10px 16px;
+  border-radius:999px;
+  background:#10213a;
+  border:1px solid var(--line);
+  color:var(--text);
+  cursor:pointer;
+  font-weight:700;
+}
+
+.seg-btn.active[data-type="all"]{
+  background:linear-gradient(90deg,#18c7ff,#3b82f6);
+  color:#04101f;
+}
+
+.seg-btn.active[data-type="gold"]{
+  background:linear-gradient(90deg,#ffcc00,#ff9f0a);
+  color:#271700;
+}
+
+.seg-btn.active[data-type="gems"]{
+  background:linear-gradient(90deg,#35d399,#10b981);
+  color:#032115;
+}
+
+.grid4{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:16px;
+}
+
+.grid3{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+
+.grid2{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:16px;
+}
+
+.card{
+  padding:18px;
+  overflow:hidden;
+}
+
+.card h3{
+  margin:0 0 14px;
+  font-size:19px;
+}
+
+.kpi .label{
+  color:var(--muted);
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+.kpi .value{
+  margin-top:8px;
+  font-size:32px;
+  line-height:1.1;
+  font-weight:900;
+}
+
+.kpi .sub{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+}
+
+.section{
+  margin-top:20px;
+}
+
+.section-title{
+  margin:0 0 12px;
+  font-size:24px;
+}
+
+canvas{
+  width:100% !important;
+  height:340px !important;
+}
+
+.table-wrap{
+  overflow:auto;
+  max-height:540px;
+  border-radius:14px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+th,td{
+  padding:10px 12px;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  text-align:left;
+  vertical-align:top;
+}
+
+th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  background:#10213a;
+  color:#eaf2ff;
+}
+
+.warn{
+  color:var(--warn);
+}
+
+.footer-note{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.55;
+  margin-top:12px;
+}
+
+@media(max-width:1100px){
+  .grid4,.grid3,.grid2{grid-template-columns:1fr}
+  .brand{flex-direction:column;align-items:flex-start}
+  .logo{font-size:48px}
+}
+
+@media(max-width:640px){
+  h1{font-size:23px}
+  .logo{font-size:38px}
+}
 </style>
 </head>
+
 <body>
 <header>
   <div class="wrap head">
     <div class="brand">
-      <div class="wordmark-wrap"><div class="wordmark">YAVER</div></div>
-      <div class="brand-copy">
+      <div class="logo">YAVER</div>
+      <div>
         <h1>YAVER Ödeme İstihbarat Paneli | YAVER 支付情报面板</h1>
-        <p>Ürün tipi filtresiyle karmaşıklığı azaltılmış sürüm. Tümü, Gold ve Gems arasında geçiş yaparak sadece seçili alanın analizlerini gör. | 通过产品类型筛选来降低复杂度。你可以在全部、金币和宝石之间切换，只查看所选部分的分析。</p>
+        <p class="subtitle">
+          订单列表 dosyasına göre güncellenmiş ödeme analizi. Gold / Gems filtreleri, Nisan-Mayıs-Haziran aylık raporu ve 3 ay özeti içerir.
+          | 根据订单列表更新的支付分析。包含金币 / 宝石筛选、4月-5月-6月月报和3个月汇总。
+        </p>
       </div>
     </div>
     <div class="actions">
       <button class="btn" id="pdfBtn" type="button">PDF indir | 下载 PDF</button>
-      <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden">
+      <input id="fileInput" type="file" accept=".csv,.xlsx,.xls" class="hidden" />
     </div>
   </div>
 </header>
 
-<main class="wrap">
-  <section class="hero">
-    <div class="panel">
-      <div class="filter-bar">
-        <div class="filter-left">
-          <div class="filter-title">Görüntü filtresi | 显示筛选</div>
-          <div class="segment-switch">
-            <button class="seg-btn active" data-type="all">Tümü | 全部</button>
-            <button class="seg-btn" data-type="gold">Gold | 金币</button>
-            <button class="seg-btn" data-type="gems">Gems | 宝石</button>
-          </div>
-        </div>
-        <div class="legend-inline">
-          <span><span class="dot all"></span>Tümü | 全部</span>
-          <span><span class="dot gold"></span>Gold | 金币</span>
-          <span><span class="dot gems"></span>Gems | 宝石</span>
+<main class="wrap" id="reportRoot">
+
+  <section class="panel">
+    <div class="filter-bar">
+      <div>
+        <div class="small">Görüntü filtresi | 显示筛选</div>
+        <div class="segment-switch" style="margin-top:8px;">
+          <button class="seg-btn active" data-type="all">Tümü | 全部</button>
+          <button class="seg-btn" data-type="gold">Gold | 金币</button>
+          <button class="seg-btn" data-type="gems">Gems | 宝石</button>
         </div>
       </div>
+      <div class="small">
+        Beklenen kolonlar | 预期字段:
+        订单号, 应用, 显示ID, 商品名称, 商品类型, 商品价格, 显示价格, 下单时间, 支付时间, 订单状态, 支付渠道, 支付方式, 设备, PaidStatus
+      </div>
     </div>
-    <div class="panel uploader" id="dropZone">
-      <div>
-        <strong>Dosyayı buraya bırak | 拖拽文件到这里</strong>
-        <div class="small">Beklenen alanlar | 预期字段: 显示ID / 商品名称 / 商品类型 / 商品价格 / 下单时间 / 支付时间 / 支付方式 / 充值IP / 设备</div>
-        <div class="small" style="margin-top:10px;">Sürükle bırak kullanabilir veya aşağıdaki butondan dosya seçebilirsin. | 你可以拖拽上传，也可以点击下方按钮选择文件。</div>
-        <div class="actions" style="justify-content:center; margin-top:16px;">
-          <label class="btn primary" for="fileInput">Dosya seç ve yükle | 选择并上传文件</label>
-        </div>
-        <div class="status" id="statusText" style="margin-top:14px; text-align:center;">Henüz veri yüklenmedi. | 尚未加载数据。</div>
+  </section>
+
+  <section class="panel uploader" id="dropZone">
+    <div>
+      <strong>Dosyayı buraya bırak | 拖拽文件到这里</strong>
+      <div class="small" style="margin-top:8px;">
+        CSV, XLSX veya XLS yükleyebilirsin. | 支持 CSV, XLSX, XLS。
+      </div>
+      <div class="actions" style="justify-content:center;margin-top:16px;">
+        <label class="btn primary" for="fileInput">Dosya seç ve yükle | 选择并上传文件</label>
+      </div>
+      <div class="status" id="statusText">
+        Henüz veri yüklenmedi. | 尚未加载数据。
       </div>
     </div>
   </section>
 
   <section class="grid4" id="kpis"></section>
 
-  <details class="section-toggle" open>
-    <summary>
-      <span>1. Genel görünüm ve ürün tipi oranları | 总览与产品类型占比</span>
-      <span class="hint">Aç / Kapat | 展开 / 收起</span>
-    </summary>
-    <div class="section-body">
-      <section class="grid4" id="typeKpis"></section>
-      <section class="grid2">
-        <div class="card"><h3>Günlük ciro ve sipariş | 每日营收与订单</h3><canvas id="dailyChart"></canvas></div>
-        <div class="card"><h3>Gold / Gems karşılaştırması | 金币 / 宝石 对比</h3><canvas id="typeCompareChart"></canvas></div>
-      </section>
-      <section class="grid3" style="margin-top:16px;">
-        <div class="card"><h3>Ödeme yöntemi dağılımı | 支付方式分布</h3><canvas id="methodChart"></canvas></div>
-        <div class="card"><h3>Saatlik sipariş dağılımı | 按小时订单分布</h3><canvas id="hourChart"></canvas></div>
-        <div class="card"><h3>Ödeme gecikmesi dağılımı | 支付延迟分布</h3><canvas id="latencyChart"></canvas></div>
-      </section>
+  <section class="section">
+    <h2 class="section-title">1. Nisan-Mayıs-Haziran aylık rapor | 4月-5月-6月月度报告</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Aylık USD / TRY ciro | 月度 USD / TRY 营收</h3>
+        <canvas id="monthlyRevenueChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Aylık sipariş ve kullanıcı | 月度订单与用户</h3>
+        <canvas id="monthlyOrderUserChart"></canvas>
+      </div>
     </div>
-  </details>
-
-  <details class="section-toggle" open>
-    <summary>
-      <span>2. Paket ve kullanıcı analizi | 礼包与用户分析</span>
-      <span class="hint">Aç / Kapat | 展开 / 收起</span>
-    </summary>
-    <div class="section-body">
-      <section class="grid2">
-        <div class="card"><h3>Hangi paketten hangi gün kaç adet alınmış | 每个礼包每日购买件数</h3><canvas id="pkgQtyChart"></canvas></div>
-        <div class="card"><h3>Hangi paketten hangi gün ne kadar ciro gelmiş | 每个礼包每日营收</h3><canvas id="pkgRevChart"></canvas></div>
-      </section>
-
-      <section class="card" style="margin-top:16px;">
-        <div class="controls">
-          <h3 style="margin:0;">Her paket için ayrı zamansal grafik | 每个礼包单独时间序列图</h3>
-          <select id="packageSelect"></select>
-          <select id="packageMetricSelect">
-            <option value="qty">Adet | 数量</option>
-            <option value="rev">Ciro | 营收</option>
-          </select>
-          <select id="packageGranularitySelect">
-            <option value="day">Günlük | 按日</option>
-            <option value="week">Haftalık | 按周</option>
-          </select>
-        </div>
-        <canvas id="singlePackageChart"></canvas>
-      </section>
-
-      <section class="grid2" style="margin-top:16px;">
-        <div class="card">
-          <h3>Sürekli aynı paketi yükleyen kullanıcılar | 持续购买同一礼包的用户</h3>
-          <div class="table-wrap"><table><thead><tr><th>Kullanıcı | 用户</th><th>Baskın paket | 主导礼包</th><th>Sadakat oranı | 忠诚度</th><th>İşlem | 订单数</th><th>Toplam ciro | 总营收</th></tr></thead><tbody id="loyalUsersBody"></tbody></table></div>
-        </div>
-        <div class="card">
-          <h3>Yüksek paket yükleyen kullanıcılar | 高价礼包用户</h3>
-          <div class="controls">
-            <select id="highUserSelect"></select>
-          </div>
-          <div class="table-wrap"><table><thead><tr><th>Kullanıcı | 用户</th><th>High-tier işlem | 高价订单</th><th>High-tier ciro | 高价营收</th><th>Baskın high paket | 主导高价礼包</th><th>Son ödeme | 最后支付</th></tr></thead><tbody id="highUsersBody"></tbody></table></div>
-        </div>
-      </section>
-
-      <section class="grid2" style="margin-top:16px;">
-        <div class="card"><h3>Seçili high-tier kullanıcının hafta hafta paket kırılımı | 所选高价用户每周礼包拆分</h3><canvas id="highUserChart"></canvas></div>
-        <div class="card heat"><h3>Seçili high-tier kullanıcının haftalık paket matrisi | 所选高价用户每周礼包矩阵</h3><div id="highUserMatrix"></div></div>
-      </section>
-
-      <section class="grid2" style="margin-top:16px;">
-        <div class="card">
-          <div class="controls" style="justify-content:space-between;align-items:flex-start;gap:16px; margin-bottom:10px;">
-            <div>
-              <h3 style="margin:0 0 6px;">Paket sadakati profili | 礼包忠诚度画像</h3>
-              <div class="small">Renkli halka yerine kullanıcı sayısı ve oranı birlikte gösterilir. | 不再只用圆环图，而是同时显示用户数与占比。</div>
-            </div>
-          </div>
-          <div class="loyalty-kpis" id="loyaltyKpiRow"></div>
-          <canvas id="loyaltyChart"></canvas>
-        </div>
-        <div class="card">
-          <h3>Paket trend özeti | 礼包趋势汇总</h3>
-          <div class="table-wrap"><table><thead><tr><th>Paket | 礼包</th><th>Adet | 数量</th><th>Adet payı | 数量占比</th><th>Ciro | 营收</th><th>Ciro payı | 营收占比</th><th>Kullanıcı | 用户</th><th>Kullanıcı penetrasyonu | 用户渗透率</th><th>Kullanıcı başına sipariş | 人均订单</th><th>Ortalama fiyat | 平均价格</th></tr></thead><tbody id="packageSummaryBody"></tbody></table></div>
-        </div>
-      </section>
+    <div class="card" style="margin-top:16px;">
+      <h3>Aylık tablo ve 3 ay özeti | 月度表格与3个月汇总</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Ay | 月</th>
+              <th>Sipariş | 订单</th>
+              <th>Kullanıcı | 用户</th>
+              <th>USD Ciro | 美元营收</th>
+              <th>TRY Ciro | 里拉营收</th>
+              <th>AOV USD | 客单价</th>
+              <th>ARPPU USD | 每付费用户收入</th>
+              <th>Gold Sipariş | 金币订单</th>
+              <th>Gems Sipariş | 宝石订单</th>
+            </tr>
+          </thead>
+          <tbody id="monthlyTableBody"></tbody>
+        </table>
+      </div>
     </div>
-  </details>
+  </section>
 
-  <details class="section-toggle">
-    <summary>
-      <span>3. Risk ve üst kullanıcılar | 风险与头部用户</span>
-      <span class="hint">Aç / Kapat | 展开 / 收起</span>
-    </summary>
-    <div class="section-body">
-      <section><div class="card"><h3>Cihaz / IP paylaşım risk kümeleri | 设备 / IP 共享风险簇</h3>
-          <div class="notice">Shared IP veya shared device tek başına suç değildir. Ama kümelenme, özellikle aynı dönemde tekrar ediyorsa, inceleme gerektiren risk sinyalidir. | 共享 IP 或共享设备本身不等于违规，但若在同一时期反复聚集出现，则属于需要复核的风险信号。</div>
-          <div class="table-wrap"><table><thead><tr><th>Tür | 类型</th><th>Değer | 值</th><th>Kullanıcı sayısı | 用户数</th><th>Örnek kullanıcılar | 示例用户</th></tr></thead><tbody id="riskBody"></tbody></table></div>
-        </div></section>
-      <section class="grid2" style="margin-top:16px;">
-        <div class="card">
-          <h3>En yüksek ciro yapan kullanıcılar | 营收最高用户</h3>
-          <div class="table-wrap"><table><thead><tr><th>Kullanıcı | 用户</th><th>Toplam ciro | 总营收</th><th>İşlem | 订单数</th><th>Son ödeme | 最后支付</th><th>Baskın paket | 主导礼包</th></tr></thead><tbody id="topUsersBody"></tbody></table></div>
-        </div>
-        <div class="card">
-          <h3>Ürün tipi kullanıcı özeti | 产品类型用户摘要</h3>
-          <div class="table-wrap"><table><thead><tr><th>Grup | 分组</th><th>Kullanıcı | 用户</th><th>Ciro | 营收</th><th>İşlem | 订单</th><th>Ortalama sipariş | 平均订单</th><th>Son ödeme ort. gün | 平均距今天数</th></tr></thead><tbody id="typeUserSummaryBody"></tbody></table></div>
-        </div>
-      </section>
-      <div class="footer-note">Not: Analiz yalnızca ödeme verisine dayanır. Oyun içi masa, rakip, transfer veya oda davranışı bu dosyadan çıkarılamaz. | 注意：分析仅基于支付数据，无法从该文件推出游戏桌、对手、转账或房间行为。</div>
+  <section class="section">
+    <h2 class="section-title">2. Genel görünüm | 总览</h2>
+    <div class="grid3">
+      <div class="card">
+        <h3>Günlük USD ciro ve sipariş | 每日美元营收与订单</h3>
+        <canvas id="dailyChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Gold / Gems karşılaştırması | 金币 / 宝石 对比</h3>
+        <canvas id="typeChart"></canvas>
+      </div>
+      <div class="card">
+        <h3>Ödeme yöntemi | 支付方式</h3>
+        <canvas id="methodChart"></canvas>
+      </div>
     </div>
-  </details>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">3. Paket analizi | 礼包分析</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>Paket özeti | 礼包汇总</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Paket | 礼包</th>
+                <th>Tip | 类型</th>
+                <th>Sipariş | 订单</th>
+                <th>Kullanıcı | 用户</th>
+                <th>USD Ciro | 美元营收</th>
+                <th>TRY Ciro | 里拉营收</th>
+                <th>AOV USD | 客单价</th>
+              </tr>
+            </thead>
+            <tbody id="packageTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>En çok ciro getiren paketler | 营收最高礼包</h3>
+        <canvas id="packageChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">4. Kullanıcı analizi | 用户分析</h2>
+    <div class="grid2">
+      <div class="card">
+        <h3>En yüksek ciro yapan kullanıcılar | 营收最高用户</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Kullanıcı | 用户</th>
+                <th>Sipariş | 订单</th>
+                <th>USD Ciro | 美元营收</th>
+                <th>TRY Ciro | 里拉营收</th>
+                <th>Son ödeme | 最后支付</th>
+                <th>Baskın paket | 主导礼包</th>
+              </tr>
+            </thead>
+            <tbody id="userTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h3>IP / cihaz risk kümeleri | IP / 设备风险簇</h3>
+        <div class="small">
+          Aynı IP veya cihaz tek başına ihlal kanıtı değildir. Sadece inceleme sinyalidir.
+          | 相同 IP 或设备本身不是违规证据，只是复核信号。
+        </div>
+        <div class="table-wrap" style="margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Tür | 类型</th>
+                <th>Değer | 值</th>
+                <th>Kullanıcı | 用户</th>
+                <th>Örnek | 示例</th>
+              </tr>
+            </thead>
+            <tbody id="riskTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="section-title">5. Temiz veri önizleme | 清洗数据预览</h2>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tarih | 日期</th>
+              <th>Kullanıcı | 用户</th>
+              <th>Paket | 礼包</th>
+              <th>Tip | 类型</th>
+              <th>USD | 美元</th>
+              <th>TRY | 里拉</th>
+              <th>Durum | 状态</th>
+              <th>Ödeme | 支付</th>
+              <th>Cihaz | 设备</th>
+            </tr>
+          </thead>
+          <tbody id="previewTableBody"></tbody>
+        </table>
+      </div>
+      <div class="footer-note">
+        Not: Bu panel sadece ödeme dosyasına göre analiz yapar. Oyun içi davranış, oda davranışı veya transfer verisi bu dosyadan çıkarılamaz.
+        | 注意：本面板仅基于支付文件分析，无法推出游戏内行为、房间行为或转账数据。
+      </div>
+    </div>
+  </section>
+
 </main>
 
 <script>
-const state = { rows: [], filteredType: 'all', analysis: null, charts: {} };
-const fieldMap = {
-  orderId:['订单号','order_id'], extOrderId:['外部订单号'], app:['应用'], accountId:['账号ID'], displayId:['显示ID','ID','Kullanıcı ID'],
-  yallaPayId:['YallaPayID'], ip:['充值IP'], ipCountry:['充值IP国家'], country:['国家'], productName:['商品名称','Ürün','Paket'],
-  productType:['商品类型','Tip'], quantity:['商品数量'], price:['商品价格','Fiyat','Miktar'], priceCurrency:['商品价格货币'],
-  localPrice:['显示价格'], localCurrency:['显示价格货币'], orderTime:['下单时间','Tarih','Zaman'], payTime:['支付时间'],
-  orderStatus:['订单状态'], channel:['支付渠道'], method:['支付方式'], device:['设备'], paidStatus:['PaidStatus']
+const state = {
+  rows: [],
+  filteredType: "all",
+  charts: {}
 };
+
+const fieldMap = {
+  orderId: ["订单号","Order ID","order_id"],
+  externalOrderId: ["外部订单号","External Order ID"],
+  app: ["应用","App"],
+  accountId: ["账号ID","Account ID"],
+  displayId: ["显示ID","ID","Kullanıcı ID","User ID"],
+  yallaPayId: ["YallaPayID"],
+  ip: ["充值IP","IP"],
+  ipCountry: ["充值IP国家"],
+  country: ["国家","Country"],
+  productName: ["商品名称","Ürün","Paket","Product Name"],
+  productType: ["商品类型","Tip","Product Type"],
+  quantity: ["商品数量","Quantity"],
+  price: ["商品价格","Fiyat","USD","Price"],
+  priceCurrency: ["商品价格货币","Price Currency"],
+  localPrice: ["显示价格","TRY","Local Price"],
+  localCurrency: ["显示价格货币","Local Currency"],
+  orderTime: ["下单时间","Order Time","Tarih","Zaman"],
+  payTime: ["支付时间","Payment Time","Pay Time"],
+  orderStatus: ["订单状态","Order Status"],
+  channel: ["支付渠道","Payment Channel"],
+  method: ["支付方式","Payment Method"],
+  device: ["设备","Device"],
+  paidStatus: ["PaidStatus","Paid Status"],
+  phone: ["手机号","Phone"]
+};
+
+const monthMap = {
+  "2026-04": "Nisan / 四月",
+  "2026-05": "Mayıs / 五月",
+  "2026-06": "Haziran / 六月"
+};
+
+const targetMonths = ["2026-04","2026-05","2026-06"];
+
 const el = id => document.getElementById(id);
-const fmtNum = n => Number(n||0).toLocaleString('tr-TR');
-const fmtMoney = n => '$' + Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2, maximumFractionDigits:2});
-const fmtDate = d => !d ? '-' : new Date(d).toLocaleDateString('tr-TR');
-const sum = arr => arr.reduce((a,b)=>a+Number(b||0),0);
-const byGroup = (arr, fn) => arr.reduce((m,x)=>((m[fn(x)] ||= []).push(x), m), {});
-function setStatus(text, isBad=false){ const s=el('statusText'); s.textContent=text; s.className='status'+(isBad?' bad':''); }
-function pick(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && String(row[k]).trim()!=='') return row[k]; } return null; }
-function parseDate(v){
-  if (v == null || v === '') return null;
-  if (v instanceof Date && !isNaN(v)) return v;
-  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400 * 1000));
-  const s = String(v).trim().replace('T',' ').slice(0,16);
-  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) {
-    const [d,t] = s.split(' '), [y,m,da] = d.split('-').map(Number), [h,mi] = t.split(':').map(Number);
-    return new Date(y,m-1,da,h,mi);
-  }
-  const d = new Date(s); return isNaN(d) ? null : d;
-}
-function getWeekKey(date){
-  const d = new Date(date); d.setHours(0,0,0,0); d.setDate(d.getDate()+4-(d.getDay()||7));
-  const yearStart = new Date(d.getFullYear(),0,1); const week = Math.ceil((((d-yearStart)/86400000)+1)/7);
-  return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
-}
-function getQuantile(values, q){
-  if (!values.length) return 0;
-  const a=[...values].sort((x,y)=>x-y), pos=(a.length-1)*q, base=Math.floor(pos), rest=pos-base;
-  return a[base+1] !== undefined ? a[base] + rest*(a[base+1]-a[base]) : a[base];
-}
-function classifyType(productType, productName){
-  const s = `${productType||''} ${productName||''}`.toLowerCase();
-  if (s.includes('gold') || s.includes('金币')) return 'gold';
-  if (s.includes('gems') || s.includes('宝石')) return 'gems';
-  return 'other';
-}
-function typeLabel(type){
-  return type==='gold' ? 'Gold | 金币' : type==='gems' ? 'Gems | 宝石' : 'Tümü | 全部';
-}
-function normalizeRows(raw){
-  const out=[];
-  for(const row of raw){
-    const rec={};
-    for(const [k,alts] of Object.entries(fieldMap)) rec[k]=pick(row,alts);
-    const displayId = String(rec.displayId||'').trim();
-    const productName = String(rec.productName||'').trim();
-    const productType = String(rec.productType||'').trim();
-    const price = Number(String(rec.price||'0').replace(',','.')) || 0;
-    const qty = Number(String(rec.quantity||'1').replace(',','.')) || 1;
-    const orderTime = parseDate(rec.orderTime);
-    const payTime = parseDate(rec.payTime) || orderTime;
-    if(!displayId || !productName || !payTime || price<=0) continue;
-    const typeClass = classifyType(productType, productName);
-    out.push({
-      displayId, productName, productType, price, qty, orderTime, payTime, typeClass,
-      method: String(rec.method||rec.channel||'Unknown'),
-      ip: String(rec.ip||''), device:String(rec.device||''), country:String(rec.country||rec.ipCountry||''),
-      week:getWeekKey(payTime), day:payTime.toISOString().slice(0,10), hour:payTime.getHours()
-    });
-  }
-  return out;
-}
-function getRowsByType(type){
-  if(type==='all') return state.rows.filter(r=>r.typeClass==='gold'||r.typeClass==='gems');
-  return state.rows.filter(r=>r.typeClass===type);
-}
-function analyze(rows, allRows, selectedType){
-  const totalAllOrders = allRows.length;
-  const totalAllRevenue = sum(allRows.map(r=>r.price));
-  const allUsersSet = new Set(allRows.map(r=>r.displayId));
-  const selectedUsers = new Set(rows.map(r=>r.displayId));
 
-  const daily = new Map(), methods = new Map();
-  const hours = Array.from({length:24},()=>0);
-  const latBuckets = {'0-1 dk | 分钟':0,'1-10 dk | 分钟':0,'10-60 dk | 分钟':0,'60+ dk | 分钟':0};
-  const users = new Map();
-  const packageMap = new Map();
-  const weeks = new Set();
-  const typeDaily = {gold:new Map(), gems:new Map()};
+function setStatus(text, bad=false){
+  const s = el("statusText");
+  s.textContent = text;
+  s.className = "status" + (bad ? " bad" : "");
+}
 
-  const typeStats = {
-    gold:{orders:0,revenue:0,users:new Set()},
-    gems:{orders:0,revenue:0,users:new Set()}
-  };
-
-  for (const r of allRows){
-    if (r.typeClass==='gold' || r.typeClass==='gems'){
-      typeStats[r.typeClass].orders += 1;
-      typeStats[r.typeClass].revenue += r.price;
-      typeStats[r.typeClass].users.add(r.displayId);
-      if (typeDaily[r.typeClass] && !typeDaily[r.typeClass].has(r.day)) typeDaily[r.typeClass].set(r.day,{day:r.day,orders:0,revenue:0});
-      if (typeDaily[r.typeClass]) typeDaily[r.typeClass].get(r.day).orders += 1;
-      if (typeDaily[r.typeClass]) typeDaily[r.typeClass].get(r.day).revenue += r.price;
+function pick(row, keys){
+  for(const k of keys){
+    if(Object.prototype.hasOwnProperty.call(row,k)){
+      const v = row[k];
+      if(v !== null && v !== undefined && String(v).trim() !== "") return v;
     }
   }
+  return "";
+}
 
-  for (const r of rows){
-    weeks.add(r.week);
-    if (!users.has(r.displayId)) users.set(r.displayId,{id:r.displayId,rows:[],totalRev:0,orders:0,productCounts:new Map(),weeks:new Map(),devices:new Set(),ips:new Set(),lastPay:null,firstPay:null});
-    const u = users.get(r.displayId);
-    u.rows.push(r); u.totalRev += r.price; u.orders += 1; u.devices.add(r.device); u.ips.add(r.ip);
-    u.lastPay = !u.lastPay || r.payTime > u.lastPay ? r.payTime : u.lastPay;
-    u.firstPay = !u.firstPay || r.payTime < u.firstPay ? r.payTime : u.firstPay;
-    u.productCounts.set(r.productName,(u.productCounts.get(r.productName)||0)+1);
-    if (!u.weeks.has(r.week)) u.weeks.set(r.week,new Map());
-    u.weeks.get(r.week).set(r.productName,(u.weeks.get(r.week).get(r.productName)||0)+1);
+function parseNumber(v){
+  if(v === null || v === undefined || v === "") return 0;
+  if(typeof v === "number") return v;
+  let s = String(v).trim();
+  s = s.replace(/\s/g,"");
+  if(s.includes(",") && s.includes(".")){
+    s = s.replace(/,/g,"");
+  }else if(s.includes(",") && !s.includes(".")){
+    s = s.replace(",",".");
+  }
+  s = s.replace(/[^\d.-]/g,"");
+  const n = Number(s);
+  return Number.isFinite(n) ? n : 0;
+}
 
-    if (!packageMap.has(r.productName)) packageMap.set(r.productName,{name:r.productName,qty:0,rev:0,users:new Set(),dailyQty:new Map(),dailyRev:new Map(),weeklyQty:new Map(),prices:[]});
-    const p = packageMap.get(r.productName);
-    p.qty += 1; p.rev += r.price; p.users.add(r.displayId); p.prices.push(r.price);
-    p.dailyQty.set(r.day,(p.dailyQty.get(r.day)||0)+1);
-    p.dailyRev.set(r.day,(p.dailyRev.get(r.day)||0)+r.price);
-    p.weeklyQty.set(r.week,(p.weeklyQty.get(r.week)||0)+1);
+function parseDate(v){
+  if(v === null || v === undefined || v === "") return null;
+  if(v instanceof Date && !isNaN(v)) return v;
 
-    if (!daily.has(r.day)) daily.set(r.day,{day:r.day,rev:0,orders:0});
-    daily.get(r.day).rev += r.price;
-    daily.get(r.day).orders += 1;
-
-    methods.set(r.method,(methods.get(r.method)||0)+r.price);
-    hours[r.hour] += 1;
-
-    const latencyMin = r.orderTime ? Math.max(0, (r.payTime - r.orderTime)/60000) : 0;
-    if (latencyMin<=1) latBuckets['0-1 dk | 分钟']++;
-    else if (latencyMin<=10) latBuckets['1-10 dk | 分钟']++;
-    else if (latencyMin<=60) latBuckets['10-60 dk | 分钟']++;
-    else latBuckets['60+ dk | 分钟']++;
+  if(typeof v === "number"){
+    return new Date(Math.round((v - 25569) * 86400 * 1000));
   }
 
-  const packagePriceList = [...packageMap.values()].map(p=>sum(p.prices)/Math.max(1,p.prices.length));
-  const highThreshold = getQuantile(packagePriceList, 0.8);
+  const raw = String(v).trim();
+  const s = raw.replace("T"," ").replace(/\//g,"-").slice(0,19);
 
-  const packages = [...packageMap.values()].map(p=>{
-    const avgPrice = sum(p.prices)/Math.max(1,p.prices.length);
-    return {
-      ...p,
-      avgPrice,
-      isHighTier: avgPrice >= highThreshold,
-      dailyQtyObj: Object.fromEntries(p.dailyQty.entries()),
-      dailyRevObj: Object.fromEntries(p.dailyRev.entries()),
-      weeklyQtyObj: Object.fromEntries(p.weeklyQty.entries())
-    };
-  }).sort((a,b)=>b.rev-a.rev);
-
-  const highPackageNames = new Set(packages.filter(p=>p.isHighTier).map(p=>p.name));
-
-  const userStats = [...users.values()].map(u=>{
-    const topPkgEntry=[...u.productCounts.entries()].sort((a,b)=>b[1]-a[1])[0] || ['-',0];
-    const dominantRatio=u.orders ? topPkgEntry[1]/u.orders : 0;
-    const loyalBand = dominantRatio === 1 ? 'Tam tek paket | 完全单礼包' : dominantRatio >= .8 ? 'Yüksek sadakat | 高忠诚' : dominantRatio >= .6 ? 'Baskın paketli | 主导礼包' : 'Karışık | 混合';
-    const highRows=u.rows.filter(r=>highPackageNames && typeof highPackageNames.has==='function' && highPackageNames.has(r.productName));
-    const highAgg={}; highRows.forEach(r=>{ highAgg[r.productName]=(highAgg[r.productName]||0)+1; });
-    const topHigh=Object.entries(highAgg).sort((a,b)=>b[1]-a[1])[0]?.[0] || '-';
-    const dominantTypeCounts={gold:0,gems:0,other:0}; u.rows.forEach(r=>dominantTypeCounts[r.typeClass]=(dominantTypeCounts[r.typeClass]||0)+1);
-    let dominantType='mixed';
-    const maxType = Object.entries(dominantTypeCounts).sort((a,b)=>b[1]-a[1])[0];
-    if (maxType && maxType[1]===u.rows.length && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
-    else if (maxType && maxType[1]/u.rows.length>=0.6 && (maxType[0]==='gold' || maxType[0]==='gems')) dominantType=maxType[0];
-    return {id:u.id,totalRev:u.totalRev,orders:u.orders,dominantPackage:topPkgEntry[0],dominantRatio,loyalBand,lastPay:u.lastPay,firstPay:u.firstPay,devices:u.devices.size,ips:u.ips.size,weeks:u.weeks,rows:u.rows,highRows,highCount:highRows.length,highRev:sum(highRows.map(r=>r.price)),topHigh,dominantType};
-  }).sort((a,b)=>b.totalRev-a.totalRev);
-
-  const loyalUsers = userStats.filter(u=>u.dominantRatio>=0.8).sort((a,b)=>b.dominantRatio-a.dominantRatio || b.totalRev-a.totalRev).slice(0,100);
-  const highUsers = userStats.filter(u=>u.highCount>0).sort((a,b)=>b.highRev-a.highRev);
-  const weeklyList=[...weeks].sort();
-  const userById=Object.fromEntries(userStats.map(u=>[u.id,u]));
-
-  const firstWeekUsers={};
-  for(const u of userStats){
-    const fw=getWeekKey(u.firstPay);
-    if(!firstWeekUsers[fw]) firstWeekUsers[fw]=new Set();
-    firstWeekUsers[fw].add(u.id);
-  }
-  const cohort=Object.entries(firstWeekUsers).sort((a,b)=>a[0].localeCompare(b[0])).slice(-10).map(([week,ids])=>{
-    const row={cohort:week,size:ids.size,values:[]}; const idArr=[...ids];
-    weeklyList.forEach(wk=>{ if(wk<week) return; const active=idArr.filter(id=>userById[id].rows.some(r=>r.week===wk)).length; row.values.push({week:wk,pct: ids.size ? Math.round(active/ids.size*100) : 0}); });
-    return row;
-  });
-
-  const riskRows = [];
-  const ipGroups = byGroup(rows.filter(r=>r.ip), r=>r.ip);
-  Object.entries(ipGroups).filter(([,arr])=>new Set(arr.map(x=>x.displayId)).size>=3).sort((a,b)=>new Set(b[1].map(x=>x.displayId)).size - new Set(a[1].map(x=>x.displayId)).size).slice(0,10).forEach(([val,arr])=>{
-    const ids=[...new Set(arr.map(x=>x.displayId))]; riskRows.push({type:'IP',value:val,count:ids.length,sample:ids.slice(0,5).join(', ')});
-  });
-  const deviceGroups = byGroup(rows.filter(r=>r.device), r=>r.device);
-  Object.entries(deviceGroups).filter(([,arr])=>new Set(arr.map(x=>x.displayId)).size>=3).sort((a,b)=>new Set(b[1].map(x=>x.displayId)).size - new Set(a[1].map(x=>x.displayId)).size).slice(0,10).forEach(([val,arr])=>{
-    const ids=[...new Set(arr.map(x=>x.displayId))]; riskRows.push({type:'Cihaz | 设备',value:val,count:ids.length,sample:ids.slice(0,5).join(', ')});
-  });
-
-  let orderShare = selectedType==='all' ? 100 : (rows.length/Math.max(1,totalAllOrders)*100);
-  let revenueShare = selectedType==='all' ? 100 : (sum(rows.map(r=>r.price))/Math.max(1,totalAllRevenue)*100);
-  let userPenetration = selectedType==='all' ? 100 : (selectedUsers.size/Math.max(1,allUsersSet.size)*100);
-  let exclusiveUsers = 0;
-  if (selectedType !== 'all'){
-    const allByUser = byGroup(allRows, r=>r.displayId);
-    exclusiveUsers = Object.values(allByUser).filter(arr => arr.every(r=>r.typeClass===selectedType)).length;
+  let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?$/);
+  if(m){
+    return new Date(
+      Number(m[1]),
+      Number(m[2]) - 1,
+      Number(m[3]),
+      Number(m[4]),
+      Number(m[5]),
+      Number(m[6] || 0)
+    );
   }
 
-  const typeUserGroups = ['gold','gems','mixed'].map(type=>{
-    let usersSubset = userStats.filter(u=> type==='mixed' ? (u.dominantType!=='gold' && u.dominantType!=='gems') : u.dominantType===type);
-    const avgDays = usersSubset.length ? sum(usersSubset.map(u=>Math.floor((Date.now()-u.lastPay.getTime())/86400000)))/usersSubset.length : 0;
-    return {
-      label: type==='gold' ? 'Gold-dominant | 金币主导' : type==='gems' ? 'Gems-dominant | 宝石主导' : 'Karma | 混合',
-      users: usersSubset.length,
-      revenue: sum(usersSubset.map(u=>u.totalRev)),
-      orders: sum(usersSubset.map(u=>u.orders)),
-      avgOrder: usersSubset.length ? sum(usersSubset.map(u=>u.totalRev))/sum(usersSubset.map(u=>u.orders)||[1]) : 0,
-      avgDays
-    };
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if(m){
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+
+  const d = new Date(raw);
+  return isNaN(d) ? null : d;
+}
+
+function pad2(n){
+  return String(n).padStart(2,"0");
+}
+
+function localDay(date){
+  return `${date.getFullYear()}-${pad2(date.getMonth()+1)}-${pad2(date.getDate())}`;
+}
+
+function localMonth(date){
+  return `${date.getFullYear()}-${pad2(date.getMonth()+1)}`;
+}
+
+function fmtNum(n){
+  return Number(n || 0).toLocaleString("tr-TR");
+}
+
+function fmtMoney(n){
+  return "$" + Number(n || 0).toLocaleString("tr-TR", {
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
   });
+}
+
+function fmtTRY(n){
+  return Number(n || 0).toLocaleString("tr-TR", {
+    minimumFractionDigits:0,
+    maximumFractionDigits:0
+  }) + " TRY";
+}
+
+function fmtPct(n){
+  return "%" + Number(n || 0).toLocaleString("tr-TR", {
+    minimumFractionDigits:1,
+    maximumFractionDigits:1
+  });
+}
+
+function fmtDate(d){
+  if(!d) return "-";
+  return d.toLocaleString("tr-TR");
+}
+
+function sum(arr){
+  return arr.reduce((a,b)=>a+Number(b || 0),0);
+}
+
+function classifyType(productType, productName){
+  const s = `${productType || ""} ${productName || ""}`.toLowerCase();
+  if(s.includes("gold") || s.includes("金币")) return "gold";
+  if(s.includes("gems") || s.includes("宝石")) return "gems";
+  return "other";
+}
+
+function typeLabel(t){
+  if(t === "gold") return "Gold | 金币";
+  if(t === "gems") return "Gems | 宝石";
+  if(t === "other") return "Diğer | 其他";
+  return "Tümü | 全部";
+}
+
+function normalizeRows(rawRows){
+  const out = [];
+
+  for(const row of rawRows){
+    const rec = {};
+    for(const [key, alts] of Object.entries(fieldMap)){
+      rec[key] = pick(row, alts);
+    }
+
+    const displayId = String(rec.displayId || "").trim();
+    const productName = String(rec.productName || "").trim();
+    const productType = String(rec.productType || "").trim();
+    const orderStatus = String(rec.orderStatus || "").trim();
+    const paidStatus = String(rec.paidStatus || "").trim();
+
+    const price = parseNumber(rec.price);
+    const localPrice = parseNumber(rec.localPrice);
+    const quantity = parseNumber(rec.quantity) || 1;
+
+    const orderTime = parseDate(rec.orderTime);
+    const payTime = parseDate(rec.payTime) || orderTime;
+
+    if(!displayId || !productName || !payTime || price <= 0) continue;
+
+    const statusText = `${orderStatus} ${paidStatus}`.toLowerCase();
+    if(statusText.includes("fail") || statusText.includes("失败") || statusText.includes("cancel") || statusText.includes("取消")){
+      continue;
+    }
+
+    const typeClass = classifyType(productType, productName);
+
+    out.push({
+      orderId: String(rec.orderId || ""),
+      externalOrderId: String(rec.externalOrderId || ""),
+      app: String(rec.app || ""),
+      accountId: String(rec.accountId || ""),
+      displayId,
+      yallaPayId: String(rec.yallaPayId || ""),
+      ip: String(rec.ip || ""),
+      country: String(rec.country || rec.ipCountry || ""),
+      productName,
+      productType,
+      typeClass,
+      quantity,
+      price,
+      priceCurrency: String(rec.priceCurrency || "USD"),
+      localPrice,
+      localCurrency: String(rec.localCurrency || "TRY"),
+      orderTime,
+      payTime,
+      day: localDay(payTime),
+      month: localMonth(payTime),
+      hour: payTime.getHours(),
+      orderStatus,
+      channel: String(rec.channel || ""),
+      method: String(rec.method || rec.channel || "Unknown"),
+      device: String(rec.device || ""),
+      paidStatus,
+      phone: String(rec.phone || "")
+    });
+  }
+
+  return out;
+}
+
+function rowsByFilter(){
+  if(state.filteredType === "all"){
+    return state.rows.filter(r => r.typeClass === "gold" || r.typeClass === "gems");
+  }
+  return state.rows.filter(r => r.typeClass === state.filteredType);
+}
+
+function groupBy(arr, fn){
+  return arr.reduce((m,x)=>{
+    const k = fn(x);
+    if(!m[k]) m[k] = [];
+    m[k].push(x);
+    return m;
+  },{});
+}
+
+function aggregateBasic(rows){
+  const users = new Set(rows.map(r=>r.displayId));
+  const usd = sum(rows.map(r=>r.price));
+  const tryTotal = sum(rows.map(r=>r.localPrice));
 
   return {
-    selectedType,
-    selectedLabel: typeLabel(selectedType),
-    totalOrders: rows.length,
-    totalUsers: selectedUsers.size,
-    totalRevenue: sum(rows.map(r=>r.price)),
-    avgOrder: rows.length ? sum(rows.map(r=>r.price))/rows.length : 0,
-    orderShare, revenueShare, userPenetration, exclusiveUsers,
-    daily:[...daily.values()].sort((a,b)=>a.day.localeCompare(b.day)),
-    methods:[...methods.entries()].sort((a,b)=>b[1]-a[1]),
-    hours, latBuckets, packages, userStats, loyalUsers, highUsers, highThreshold, cohort, weeklyList, riskRows, typeStats, typeDaily, typeUserGroups,
-    totalAllUsers: allUsersSet.size, totalAllRevenue, totalAllOrders
+    orders: rows.length,
+    users: users.size,
+    usd,
+    tryTotal,
+    aov: rows.length ? usd / rows.length : 0,
+    arppu: users.size ? usd / users.size : 0
   };
 }
-function destroyChart(id){ if(state.charts[id]) state.charts[id].destroy(); }
+
+function buildMonthly(rows){
+  const result = [];
+
+  for(const m of targetMonths){
+    const monthRows = rows.filter(r => r.month === m);
+    const basic = aggregateBasic(monthRows);
+    const goldOrders = monthRows.filter(r=>r.typeClass==="gold").length;
+    const gemsOrders = monthRows.filter(r=>r.typeClass==="gems").length;
+
+    result.push({
+      monthKey:m,
+      monthLabel:monthMap[m],
+      ...basic,
+      goldOrders,
+      gemsOrders
+    });
+  }
+
+  const all3 = rows.filter(r => targetMonths.includes(r.month));
+  const basic3 = aggregateBasic(all3);
+
+  result.push({
+    monthKey:"TOTAL",
+    monthLabel:"3 Ay Toplam / 3个月合计",
+    ...basic3,
+    goldOrders: all3.filter(r=>r.typeClass==="gold").length,
+    gemsOrders: all3.filter(r=>r.typeClass==="gems").length
+  });
+
+  return result;
+}
+
+function buildDaily(rows){
+  const g = groupBy(rows, r=>r.day);
+  return Object.entries(g).map(([day,arr])=>({
+    day,
+    orders:arr.length,
+    users:new Set(arr.map(r=>r.displayId)).size,
+    usd:sum(arr.map(r=>r.price)),
+    tryTotal:sum(arr.map(r=>r.localPrice))
+  })).sort((a,b)=>a.day.localeCompare(b.day));
+}
+
+function buildTypeStats(rows){
+  const types = ["gold","gems"];
+  return types.map(t=>{
+    const arr = rows.filter(r=>r.typeClass===t);
+    return {
+      type:t,
+      label:typeLabel(t),
+      orders:arr.length,
+      users:new Set(arr.map(r=>r.displayId)).size,
+      usd:sum(arr.map(r=>r.price)),
+      tryTotal:sum(arr.map(r=>r.localPrice))
+    };
+  });
+}
+
+function buildMethods(rows){
+  const g = groupBy(rows, r=>r.method || "Unknown");
+  return Object.entries(g).map(([method,arr])=>({
+    method,
+    orders:arr.length,
+    usd:sum(arr.map(r=>r.price))
+  })).sort((a,b)=>b.usd-a.usd);
+}
+
+function buildPackages(rows){
+  const g = groupBy(rows, r=>r.productName);
+  return Object.entries(g).map(([name,arr])=>({
+    name,
+    type:typeLabel(arr[0]?.typeClass),
+    orders:arr.length,
+    users:new Set(arr.map(r=>r.displayId)).size,
+    usd:sum(arr.map(r=>r.price)),
+    tryTotal:sum(arr.map(r=>r.localPrice)),
+    aov:arr.length ? sum(arr.map(r=>r.price)) / arr.length : 0
+  })).sort((a,b)=>b.usd-a.usd);
+}
+
+function buildUsers(rows){
+  const g = groupBy(rows, r=>r.displayId);
+  return Object.entries(g).map(([id,arr])=>{
+    const pkgG = groupBy(arr, r=>r.productName);
+    const dominantPackage = Object.entries(pkgG)
+      .map(([name,rows])=>({name,count:rows.length}))
+      .sort((a,b)=>b.count-a.count)[0]?.name || "-";
+
+    return {
+      id,
+      orders:arr.length,
+      usd:sum(arr.map(r=>r.price)),
+      tryTotal:sum(arr.map(r=>r.localPrice)),
+      lastPay:arr.map(r=>r.payTime).sort((a,b)=>b-a)[0],
+      dominantPackage
+    };
+  }).sort((a,b)=>b.usd-a.usd);
+}
+
+function buildRisks(rows){
+  const risks = [];
+
+  const ipG = groupBy(rows.filter(r=>r.ip), r=>r.ip);
+  Object.entries(ipG).forEach(([ip,arr])=>{
+    const users = [...new Set(arr.map(r=>r.displayId))];
+    if(users.length >= 3){
+      risks.push({
+        type:"IP",
+        value:ip,
+        users:users.length,
+        sample:users.slice(0,6).join(", ")
+      });
+    }
+  });
+
+  const deviceG = groupBy(rows.filter(r=>r.device), r=>r.device);
+  Object.entries(deviceG).forEach(([device,arr])=>{
+    const users = [...new Set(arr.map(r=>r.displayId))];
+    if(users.length >= 3){
+      risks.push({
+        type:"Cihaz | 设备",
+        value:device,
+        users:users.length,
+        sample:users.slice(0,6).join(", ")
+      });
+    }
+  });
+
+  return risks.sort((a,b)=>b.users-a.users).slice(0,30);
+}
+
+function destroyChart(id){
+  if(state.charts[id]){
+    state.charts[id].destroy();
+    delete state.charts[id];
+  }
+}
+
 function makeChart(id, config){
   destroyChart(id);
-  config.options = config.options || {};
-  config.options.animation = Object.assign({duration:950,easing:'easeOutQuart'}, config.options.animation||{});
-  state.charts[id]=new Chart(el(id), config);
-}
-function colorList(n){ const base=['#18c7ff','#3b82f6','#ffcc00','#23c27f','#ff7a59','#a78bfa','#f472b6','#22d3ee','#fb7185','#f59e0b']; return Array.from({length:n},(_,i)=>base[i%base.length]); }
-function axisMoney(v){ return '$' + Number(v).toLocaleString('tr-TR'); }
-function axisCount(v){ return Number(v).toLocaleString('tr-TR'); }
-function chartBase(){
-  return {
+
+  const baseOptions = {
     responsive:true,
     maintainAspectRatio:false,
-    interaction:{mode:'index',intersect:false},
-    elements:{line:{borderWidth:3},point:{radius:0,hoverRadius:5,hitRadius:12},bar:{borderRadius:8,borderSkipped:false,maxBarThickness:26}},
+    interaction:{mode:"index",intersect:false},
     plugins:{
-      legend:{position:'bottom',labels:{color:'#eef4ff',usePointStyle:true,pointStyle:'circle',padding:18,boxWidth:10}},
+      legend:{
+        position:"bottom",
+        labels:{color:"#eef4ff",usePointStyle:true}
+      },
       tooltip:{
-        backgroundColor:'rgba(7,17,31,.96)',
-        titleColor:'#ffffff',
-        bodyColor:'#dfefff',
-        borderColor:'rgba(94,147,219,.45)',
-        borderWidth:1,
-        padding:12,
-        displayColors:true,
-        cornerRadius:12
+        backgroundColor:"rgba(7,17,31,.96)",
+        titleColor:"#fff",
+        bodyColor:"#dfefff",
+        borderColor:"rgba(94,147,219,.45)",
+        borderWidth:1
       }
     },
     scales:{
-      x:{grid:{display:false},ticks:{color:'#d7e8ff',maxRotation:0,autoSkip:true,maxTicksLimit:12}},
-      y:{grid:{color:'rgba(110,145,194,.14)'},ticks:{color:'#d7e8ff'}}
+      x:{
+        grid:{display:false},
+        ticks:{color:"#d7e8ff",maxRotation:0,autoSkip:true,maxTicksLimit:12}
+      },
+      y:{
+        beginAtZero:true,
+        grid:{color:"rgba(110,145,194,.14)"},
+        ticks:{color:"#d7e8ff"}
+      }
     }
   };
-}
-function chartOpts(){
-  const o = chartBase();
-  o.scales.y.ticks.callback = v=>axisMoney(v);
-  return o;
-}
-function chartOptsDual(){
-  const o = chartBase();
-  o.scales.y.ticks.callback = v=>axisMoney(v);
-  o.scales.y1 = {position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d7e8ff',callback:v=>axisCount(v)}};
-  return o;
-}
-function chartOptsCount(){
-  const o = chartBase();
-  o.scales.y.ticks.callback = v=>axisCount(v);
-  return o;
-}
-function chartOptsPct(max=100){
-  const o = chartBase();
-  o.scales.y.max=max;
-  o.scales.y.ticks.callback = v=>v + '%';
-  return o;
-}
-function chartOptsStacked(isMoney=false){
-  const o = chartBase();
-  o.scales.x.stacked = true;
-  o.scales.y.stacked = true;
-  o.scales.y.ticks.callback = v=>isMoney ? axisMoney(v) : axisCount(v);
-  return o;
-}
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function escapeAttr(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-function renderTypeKpis(a){
-  const totalUsers = a.totalAllUsers;
-  const totalOrders = a.totalAllOrders;
-  const totalRevenue = a.totalAllRevenue;
-  const goldUsers = a.typeStats.gold.users.size, gemsUsers = a.typeStats.gems.users.size;
-
-  if (a.selectedType === 'all'){
-    el('typeKpis').innerHTML = `
-      <div class="card kpi"><div class="label">Gold sipariş payı | 金币订单占比</div><div class="value">%${(totalOrders? a.typeStats.gold.orders/totalOrders*100:0).toFixed(1)}</div><div class="sub">${fmtNum(a.typeStats.gold.orders)} sipariş | ${fmtNum(a.typeStats.gold.orders)} 笔订单</div></div>
-      <div class="card kpi"><div class="label">Gold ciro payı | 金币营收占比</div><div class="value">%${(totalRevenue? a.typeStats.gold.revenue/totalRevenue*100:0).toFixed(1)}</div><div class="sub">${fmtMoney(a.typeStats.gold.revenue)} | ${fmtNum(goldUsers)} kullanıcı</div></div>
-      <div class="card kpi"><div class="label">Gems sipariş payı | 宝石订单占比</div><div class="value">%${(totalOrders? a.typeStats.gems.orders/totalOrders*100:0).toFixed(1)}</div><div class="sub">${fmtNum(a.typeStats.gems.orders)} sipariş | ${fmtNum(a.typeStats.gems.orders)} 笔订单</div></div>
-      <div class="card kpi"><div class="label">Gems ciro payı | 宝石营收占比</div><div class="value">%${(totalRevenue? a.typeStats.gems.revenue/totalRevenue*100:0).toFixed(1)}</div><div class="sub">${fmtMoney(a.typeStats.gems.revenue)} | ${fmtNum(gemsUsers)} kullanıcı</div></div>
-    `;
-  } else {
-    el('typeKpis').innerHTML = `
-      <div class="card kpi"><div class="label">${a.selectedLabel} sipariş payı | 订单占比</div><div class="value">%${a.orderShare.toFixed(1)}</div><div class="sub">Toplam ${fmtNum(a.totalAllOrders)} sipariş içindeki oran | 占总订单 ${fmtNum(a.totalAllOrders)} 的比例</div></div>
-      <div class="card kpi"><div class="label">${a.selectedLabel} ciro payı | 营收占比</div><div class="value">%${a.revenueShare.toFixed(1)}</div><div class="sub">Toplam ${fmtMoney(a.totalAllRevenue)} içindeki oran | 占总营收的比例</div></div>
-      <div class="card kpi"><div class="label">${a.selectedLabel} kullanıcı penetrasyonu | 用户渗透率</div><div class="value">%${a.userPenetration.toFixed(1)}</div><div class="sub">${fmtNum(a.totalUsers)} kullanıcı | ${fmtNum(a.totalUsers)} 名用户</div></div>
-      <div class="card kpi"><div class="label">${a.selectedLabel} exclusive kullanıcı | 独占用户</div><div class="value">${fmtNum(a.exclusiveUsers)}</div><div class="sub">Sadece bu tipte yükleme yapan kullanıcılar | 只充值该类型的用户</div></div>
-    `;
-  }
-}
-function renderSinglePackageChart(){
-  const a=state.analysis; if(!a || !a.packages.length){ destroyChart('singlePackageChart'); return; }
-  const pkgName = el('packageSelect').value || a.packages[0].name;
-  const metric = el('packageMetricSelect').value, gran = el('packageGranularitySelect').value;
-  const p = a.packages.find(x=>x.name===pkgName); if(!p) return;
-  let labels=[], data=[];
-  if (gran==='day'){
-    labels = a.daily.map(x=>x.day);
-    data = labels.map(d=> metric==='qty' ? (p.dailyQtyObj[d]||0) : (p.dailyRevObj[d]||0));
-  } else {
-    labels = a.weeklyList;
-    data = labels.map(w=> metric==='qty' ? (p.weeklyQtyObj[w]||0) : sum(state.rows.filter(r=>r.productName===p.name && r.week===w && (state.filteredType==='all' || r.typeClass===state.filteredType)).map(r=>r.price)));
-  }
-  makeChart('singlePackageChart',{type:'line',data:{labels,datasets:[{label:`${pkgName} - ${metric==='qty'?'Adet | 数量':'Ciro | 营收'}`,data,borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.14)',fill:true,tension:.34,cubicInterpolationMode:'monotone'}]},options: metric==='qty' ? chartOptsCount() : chartOpts()});
-}
-function renderHighUser(){
-  const a=state.analysis;
-  if(!a || !a.highUsers.length){
-    el('highUserMatrix').innerHTML = '<div class="empty-note">High-tier kullanıcı bulunmadı. | 未找到高价礼包用户。</div>';
-    destroyChart('highUserChart');
-    el('highUserSelect').innerHTML = '';
-    return;
-  }
-  const id = el('highUserSelect').value || a.highUsers[0].id;
-  const u = a.highUsers.find(x=>x.id===id); if(!u) return;
-  const packageNames = [...new Set(u.highRows.map(r=>r.productName))];
-  const weeks = [...new Set(u.highRows.map(r=>r.week))].sort();
-  makeChart('highUserChart',{type:'bar',data:{labels:weeks,datasets:packageNames.map((p,i)=>({label:p,data:weeks.map(w=>u.highRows.filter(r=>r.week===w && r.productName===p).length),backgroundColor:colorList(packageNames.length)[i],stack:'s'}))},options:chartOptsStacked(false)});
-  let html = '<table><thead><tr><th>Hafta | 周</th>' + packageNames.map(p=>`<th>${escapeHtml(p)}</th>`).join('') + '</tr></thead><tbody>';
-  html += weeks.map(w=>'<tr><td>'+w+'</td>' + packageNames.map(p=>`<td>${u.highRows.filter(r=>r.week===w && r.productName===p).length}</td>`).join('') + '</tr>').join('');
-  html += '</tbody></table>';
-  el('highUserMatrix').innerHTML = html;
+  config.options = Object.assign({}, baseOptions, config.options || {});
+  state.charts[id] = new Chart(el(id), config);
 }
 
-function render(){
-  if (!state.rows.length){ setStatus('Henüz veri yüklenmedi. | 尚未加载数据。'); return; }
-  const filtered = getRowsByType(state.filteredType);
-  state.analysis = analyze(filtered, state.rows, state.filteredType);
-  const a = state.analysis;
+function moneyAxis(v){
+  return "$" + Number(v).toLocaleString("tr-TR");
+}
 
-  setStatus(`${a.selectedLabel} seçili. ${fmtNum(a.totalOrders)} sipariş, ${fmtNum(a.totalUsers)} kullanıcı, toplam ciro ${fmtMoney(a.totalRevenue)} | 已选择 ${a.selectedLabel}。${fmtNum(a.totalOrders)} 笔订单，${fmtNum(a.totalUsers)} 名用户，总营收 ${fmtMoney(a.totalRevenue)}`);
+function countAxis(v){
+  return Number(v).toLocaleString("tr-TR");
+}
 
-  el('kpis').innerHTML = `
-    <div class="card kpi"><div class="label">Seçili görünüm | 当前视图</div><div class="value">${a.selectedLabel}</div><div class="sub">Filtreye göre yeniden hesaplandı | 已按筛选条件重新计算</div></div>
-    <div class="card kpi"><div class="label">Toplam sipariş | 总订单</div><div class="value">${fmtNum(a.totalOrders)}</div><div class="sub">Geçerli satırlar | 有效记录</div></div>
-    <div class="card kpi"><div class="label">Tekil kullanıcı | 唯一用户</div><div class="value">${fmtNum(a.totalUsers)}</div><div class="sub">显示ID bazlı | 按 显示ID 统计</div></div>
-    <div class="card kpi"><div class="label">Toplam ciro | 总营收</div><div class="value">${fmtMoney(a.totalRevenue)}</div><div class="sub">Ortalama sipariş ${fmtMoney(a.avgOrder)} | 平均订单 ${fmtMoney(a.avgOrder)}</div></div>`;
+function renderKpis(rows){
+  const basic = aggregateBasic(rows);
+  const all = aggregateBasic(state.rows);
+  const share = all.usd ? basic.usd / all.usd * 100 : 0;
 
-  renderTypeKpis(a);
-
-  makeChart('dailyChart',{type:'line',data:{labels:a.daily.map(x=>x.day),datasets:[
-    {label:'Ciro | 营收',data:a.daily.map(x=>x.rev),borderColor:'#18c7ff',backgroundColor:'rgba(24,199,255,.14)',yAxisID:'y',fill:true,tension:.34,cubicInterpolationMode:'monotone'},
-    {label:'Sipariş | 订单',data:a.daily.map(x=>x.orders),borderColor:'#ffcc00',backgroundColor:'rgba(255,204,0,.06)',yAxisID:'y1',fill:false,tension:.34,cubicInterpolationMode:'monotone'}
-  ]},options:chartOptsDual()});
-
-  if (state.filteredType === 'all'){
-    const days = [...new Set([...a.typeDaily.gold.keys(), ...a.typeDaily.gems.keys()])].sort();
-    makeChart('typeCompareChart',{type:'line',data:{labels:days,datasets:[
-      {label:'Gold ciro | 金币营收',data:days.map(d=>(a.typeDaily.gold.get(d)?.revenue)||0),borderColor:'#ffcc00',backgroundColor:'rgba(255,204,0,.10)',fill:true,tension:.32,cubicInterpolationMode:'monotone'},
-      {label:'Gems ciro | 宝石营收',data:days.map(d=>(a.typeDaily.gems.get(d)?.revenue)||0),borderColor:'#35d399',backgroundColor:'rgba(53,211,153,.08)',fill:true,tension:.32,cubicInterpolationMode:'monotone'}
-    ]},options:chartOpts()});
-  } else {
-    const selected = a.selectedType;
-    const baseOrders = a.totalAllOrders ? (a.totalOrders / a.totalAllOrders * 100) : 0;
-    const baseRevenue = a.totalAllRevenue ? (a.totalRevenue / a.totalAllRevenue * 100) : 0;
-    makeChart('typeCompareChart',{type:'bar',data:{labels:['Sipariş payı | 订单占比','Ciro payı | 营收占比','Kullanıcı penetrasyonu | 用户渗透率'],datasets:[{label:a.selectedLabel,data:[baseOrders,baseRevenue,a.userPenetration],backgroundColor:selected==='gold' ? '#ffcc00' : '#35d399'}]},options:chartOptsPct(100)});
-  }
-
-  makeChart('methodChart',{type:'bar',data:{labels:a.methods.map(x=>x[0]),datasets:[{label:'Ciro | 营收',data:a.methods.map(x=>x[1]),backgroundColor:colorList(a.methods.length)}]},options:chartOpts()});
-  makeChart('hourChart',{type:'bar',data:{labels:[...Array(24).keys()].map(h=>String(h).padStart(2,'0')+':00'),datasets:[{label:'Sipariş | 订单',data:a.hours,backgroundColor:'#3b82f6'}]},options:chartOptsCount()});
-  makeChart('latencyChart',{type:'bar',data:{labels:Object.keys(a.latBuckets),datasets:[{label:'Sipariş | 订单',data:Object.values(a.latBuckets),backgroundColor:'#ffb84d'}]},options:chartOptsCount()});
-
-  const loyaltyBands=['Tam tek paket | 完全单礼包','Yüksek sadakat | 高忠诚','Baskın paketli | 主导礼包','Karışık | 混合'];
-  const loyaltyCounts=loyaltyBands.map(k=>a.userStats.filter(u=>u.loyalBand===k).length);
-  const loyaltyTotal = loyaltyCounts.reduce((s,v)=>s+v,0) || 1;
-  const loyaltyRows = loyaltyBands.map((label,i)=>({label,count:loyaltyCounts[i],pct:(loyaltyCounts[i]/loyaltyTotal*100)}))
-                                .sort((x,y)=>y.count-x.count);
-  const dominantLoyal = loyaltyRows[0] || {label:'-',count:0,pct:0};
-  const concentrated = ((loyaltyRows[0]?.pct||0) + (loyaltyRows[1]?.pct||0)).toFixed(1);
-  const pureUsers = loyaltyBands[0];
-  const pureCount = loyaltyCounts[0] || 0;
-  const loyaltyRowEl = el('loyaltyKpiRow');
-  if (loyaltyRowEl) loyaltyRowEl.innerHTML = `
-    <div class="loyalty-kpi">
-      <div class="mini">Baskın sadakat bandı | 主导忠诚带</div>
-      <div class="big">${dominantLoyal.pct.toFixed(1)}%</div>
-      <div class="sub">${dominantLoyal.label}</div>
+  el("kpis").innerHTML = `
+    <div class="card kpi">
+      <div class="label">Görünüm | 视图</div>
+      <div class="value">${typeLabel(state.filteredType)}</div>
+      <div class="sub">Filtreye göre hesaplandı | 已按筛选计算</div>
     </div>
-    <div class="loyalty-kpi">
-      <div class="mini">İlk iki bandın toplamı | 前两档合计</div>
-      <div class="big">${concentrated}%</div>
-      <div class="sub">Yoğunlaşma göstergesi | 集中度指标</div>
+    <div class="card kpi">
+      <div class="label">Toplam sipariş | 总订单</div>
+      <div class="value">${fmtNum(basic.orders)}</div>
+      <div class="sub">Geçerli ödeme satırı | 有效支付记录</div>
     </div>
-    <div class="loyalty-kpi">
-      <div class="mini">Tam tek paket kullanıcı | 完全单礼包用户</div>
-      <div class="big">${fmtNum(pureCount)}</div>
-      <div class="sub">${((pureCount/loyaltyTotal)*100).toFixed(1)}% kullanıcı | 用户</div>
+    <div class="card kpi">
+      <div class="label">Tekil kullanıcı | 去重用户</div>
+      <div class="value">${fmtNum(basic.users)}</div>
+      <div class="sub">显示ID bazlı | 按 显示ID 统计</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">USD ciro | 美元营收</div>
+      <div class="value">${fmtMoney(basic.usd)}</div>
+      <div class="sub">TRY: ${fmtTRY(basic.tryTotal)} | Pay: ${fmtPct(share)}</div>
     </div>
   `;
-  makeChart('loyaltyChart',{
-    type:'bar',
+}
+
+function renderMonthly(rows){
+  const monthly = buildMonthly(rows);
+
+  el("monthlyTableBody").innerHTML = monthly.map(r=>`
+    <tr>
+      <td><strong>${r.monthLabel}</strong></td>
+      <td>${fmtNum(r.orders)}</td>
+      <td>${fmtNum(r.users)}</td>
+      <td>${fmtMoney(r.usd)}</td>
+      <td>${fmtTRY(r.tryTotal)}</td>
+      <td>${fmtMoney(r.aov)}</td>
+      <td>${fmtMoney(r.arppu)}</td>
+      <td>${fmtNum(r.goldOrders)}</td>
+      <td>${fmtNum(r.gemsOrders)}</td>
+    </tr>
+  `).join("");
+
+  const onlyMonths = monthly.filter(r=>r.monthKey !== "TOTAL");
+
+  makeChart("monthlyRevenueChart",{
+    type:"bar",
     data:{
-      labels:loyaltyRows.map(x=>x.label),
+      labels:onlyMonths.map(r=>r.monthLabel),
       datasets:[
-        {label:'Kullanıcı sayısı | 用户数',data:loyaltyRows.map(x=>x.count),backgroundColor:['#18c7ff','#23c27f','#ffcc00','#ff6677']},
-        {label:'Oran % | 占比 %',data:loyaltyRows.map(x=>Number(x.pct.toFixed(1))),type:'line',borderColor:'#d7e8ff',backgroundColor:'transparent',yAxisID:'y1',tension:.28,pointRadius:4,pointHoverRadius:5}
+        {
+          label:"USD Ciro | 美元营收",
+          data:onlyMonths.map(r=>r.usd),
+          backgroundColor:"#18c7ff",
+          yAxisID:"y"
+        },
+        {
+          label:"TRY Ciro | 里拉营收",
+          data:onlyMonths.map(r=>r.tryTotal),
+          backgroundColor:"#ffcc00",
+          yAxisID:"y1"
+        }
       ]
     },
     options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      elements:{bar:{borderRadius:10,borderSkipped:false,maxBarThickness:34},line:{borderWidth:2.5}},
-      plugins:{
-        legend:{position:'bottom',labels:{color:'#eef4ff',usePointStyle:true,pointStyle:'circle',padding:18}},
-        tooltip:{
-          backgroundColor:'rgba(7,17,31,.96)',titleColor:'#fff',bodyColor:'#dfefff',borderColor:'rgba(94,147,219,.45)',borderWidth:1,padding:12,cornerRadius:12,
-          callbacks:{label:(ctx)=>ctx.datasetIndex===0?`Kullanıcı | 用户: ${fmtNum(ctx.parsed.y)}`:`Oran | 占比: %${ctx.parsed.y}`}
-        }
-      },
       scales:{
-        x:{grid:{display:false},ticks:{color:'#d7e8ff',font:{size:12,weight:'600'}}},
-        y:{beginAtZero:true,grid:{color:'rgba(110,145,194,.14)'},ticks:{color:'#d7e8ff',callback:v=>fmtNum(v)},title:{display:true,text:'Kullanıcı sayısı | 用户数',color:'#9cb0d1'}},
-        y1:{beginAtZero:true,position:'right',grid:{drawOnChartArea:false},ticks:{color:'#d7e8ff',callback:v=>`%${v}`},title:{display:true,text:'Oran | 占比',color:'#9cb0d1'},suggestedMax:100}
+        y:{
+          beginAtZero:true,
+          position:"left",
+          grid:{color:"rgba(110,145,194,.14)"},
+          ticks:{color:"#d7e8ff",callback:moneyAxis}
+        },
+        y1:{
+          beginAtZero:true,
+          position:"right",
+          grid:{drawOnChartArea:false},
+          ticks:{color:"#d7e8ff",callback:v=>Number(v).toLocaleString("tr-TR")+" TRY"}
+        }
       }
     }
   });
 
-  const topPackages=a.packages.slice(0,8), days=a.daily.map(x=>x.day);
-  makeChart('pkgQtyChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyQtyObj[d]||0),backgroundColor:colorList(8)[i],stack:'qty'}))},options:chartOptsStacked(false)});
-  makeChart('pkgRevChart',{type:'bar',data:{labels:days,datasets:topPackages.map((p,i)=>({label:p.name,data:days.map(d=>p.dailyRevObj[d]||0),backgroundColor:colorList(8)[i],stack:'rev'}))},options:chartOptsStacked(true)});
-
-  el('packageSelect').innerHTML = a.packages.length ? a.packages.map((p,i)=>`<option value="${escapeAttr(p.name)}" ${i===0?'selected':''}>${escapeHtml(p.name)}</option>`).join('') : '';
-  renderSinglePackageChart();
-
-  el('loyalUsersBody').innerHTML = a.loyalUsers.length ? a.loyalUsers.slice(0,30).map(u=>`<tr><td>${u.id}</td><td>${escapeHtml(u.dominantPackage)}</td><td>${(u.dominantRatio*100).toFixed(1)}%</td><td>${fmtNum(u.orders)}</td><td>${fmtMoney(u.totalRev)}</td></tr>`).join('') : '<tr><td colspan="5">Eşik üstü sadık kullanıcı yok. | 没有达到阈值的忠诚用户。</td></tr>';
-
-  el('highUsersBody').innerHTML = a.highUsers.length ? a.highUsers.slice(0,40).map(u=>`<tr><td>${u.id}</td><td>${fmtNum(u.highCount)}</td><td>${fmtMoney(u.highRev)}</td><td>${escapeHtml(u.topHigh)}</td><td>${fmtDate(u.lastPay)}</td></tr>`).join('') : '<tr><td colspan="5">High-tier kullanıcı yok. | 没有高价礼包用户。</td></tr>';
-  el('highUserSelect').innerHTML = a.highUsers.length ? a.highUsers.slice(0,100).map((u,i)=>`<option value="${escapeAttr(u.id)}" ${i===0?'selected':''}>${escapeHtml(u.id)} | ${fmtMoney(u.highRev)}</option>`).join('') : '<option value="">Kullanıcı yok | 无用户</option>';
-  renderHighUser();
-
-  el('riskBody').innerHTML = a.riskRows.length ? a.riskRows.slice(0,30).map(r=>`<tr><td>${r.type}</td><td>${escapeHtml(r.value)}</td><td>${fmtNum(r.count)}</td><td>${escapeHtml(r.sample)}</td></tr>`).join('') : '<tr><td colspan="4">Eşik üstü paylaşımlı IP / cihaz kümesi bulunmadı. | 未发现超过阈值的共享 IP / 设备簇。</td></tr>';
-
-  el('packageSummaryBody').innerHTML = a.packages.length ? a.packages.slice(0,30).map(p=>{
-    const qtyShare = a.totalOrders ? (p.qty / a.totalOrders * 100) : 0;
-    const revShare = a.totalRevenue ? (p.rev / a.totalRevenue * 100) : 0;
-    const userPen = a.totalUsers ? (p.users.size / a.totalUsers * 100) : 0;
-    const ordersPerUser = p.users.size ? (p.qty / p.users.size) : 0;
-    return `<tr><td>${escapeHtml(p.name)} ${p.isHighTier?'<span class="warn">★</span>':''}</td><td>${fmtNum(p.qty)}</td><td>%${qtyShare.toFixed(1)}</td><td>${fmtMoney(p.rev)}</td><td>%${revShare.toFixed(1)}</td><td>${fmtNum(p.users.size)}</td><td>%${userPen.toFixed(1)}</td><td>${ordersPerUser.toFixed(2)}</td><td>${fmtMoney(p.avgPrice)}</td></tr>`;
-  }).join('') : '<tr><td colspan="9">Paket verisi yok. | 没有礼包数据。</td></tr>';
-
-  el('topUsersBody').innerHTML = a.userStats.length ? a.userStats.slice(0,40).map(u=>`<tr><td>${u.id}</td><td>${fmtMoney(u.totalRev)}</td><td>${fmtNum(u.orders)}</td><td>${fmtDate(u.lastPay)}</td><td>${escapeHtml(u.dominantPackage)}</td></tr>`).join('') : '<tr><td colspan="5">Kullanıcı verisi yok. | 没有用户数据。</td></tr>';
-
-  el('typeUserSummaryBody').innerHTML = a.typeUserGroups.map(g=>`<tr><td>${g.label}</td><td>${fmtNum(g.users)}</td><td>${fmtMoney(g.revenue)}</td><td>${fmtNum(g.orders)}</td><td>${fmtMoney(g.avgOrder)}</td><td>${g.avgDays.toFixed(1)}</td></tr>`).join('');
-
-  document.querySelectorAll('.seg-btn').forEach(btn=>btn.classList.toggle('active', btn.dataset.type===state.filteredType));
-}
-function currentSectionStates(){
-  return [...document.querySelectorAll('.section-toggle')].map((d,i)=>({
-    index:i+1,
-    title:(d.querySelector('summary span')?.textContent || '').trim(),
-    open:d.hasAttribute('open')
-  }));
-}
-async function exportPdfReport(){
-  if(!state.analysis || !state.rows.length){
-    setStatus('Önce veri yüklemelisin. | 请先加载数据。', true);
-    return;
-  }
-  if(!window.jspdf || !window.jspdf.jsPDF){
-    setStatus('PDF kütüphanesi yüklenemedi. Sayfayı yenileyip tekrar dene. | PDF 库未能加载，请刷新页面后重试。', true);
-    return;
-  }
-  if(!window.html2canvas){
-    setStatus('Görsel PDF modülü yüklenemedi. Sayfayı yenileyip tekrar dene. | 图像 PDF 模块未能加载，请刷新页面后重试。', true);
-    return;
-  }
-
-  setStatus('PDF hazırlanıyor, lütfen bekle... | PDF 正在生成，请稍候...');
-
-  await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-
-  const { jsPDF } = window.jspdf;
-  const selectedMap = {all:'Tümü | 全部', gold:'Gold | 金币', gems:'Gems | 宝石'};
-
-  const exportRoot = document.createElement('div');
-  exportRoot.style.position = 'fixed';
-  exportRoot.style.left = '-100000px';
-  exportRoot.style.top = '0';
-  exportRoot.style.width = '1440px';
-  exportRoot.style.background = '#07111f';
-  exportRoot.style.zIndex = '-1';
-  exportRoot.style.padding = '0';
-  exportRoot.style.margin = '0';
-
-  const content = document.createElement('div');
-  content.style.width = '1440px';
-  content.style.background = 'linear-gradient(180deg,#07111f 0%,#09162a 100%)';
-  content.style.color = '#eef4ff';
-  content.style.fontFamily = 'Inter, Arial, sans-serif';
-  content.style.padding = '24px';
-
-  const hero = document.createElement('div');
-  hero.style.background = 'linear-gradient(180deg,rgba(17,37,66,.95),rgba(11,24,42,.95))';
-  hero.style.border = '1px solid #223a5f';
-  hero.style.borderRadius = '22px';
-  hero.style.padding = '22px 24px';
-  hero.style.marginBottom = '18px';
-  hero.innerHTML = `
-    <div style="font-size:56px;font-weight:900;letter-spacing:2px;line-height:1;
-      background:linear-gradient(90deg,#18c7ff 0%,#12d3ff 28%,#4fe19a 56%,#ffcc00 100%);
-      -webkit-background-clip:text;background-clip:text;color:transparent;display:inline-block;">YAVER</div>
-    <div style="margin-top:12px;font-size:28px;font-weight:800;color:#eef4ff;">Ödeme İstihbarat Paneli | 支付情报面板</div>
-    <div style="margin-top:8px;font-size:16px;color:#9cb0d1;">Seçili görünüm: ${selectedMap[state.filteredType]} | 已选视图：${selectedMap[state.filteredType]}</div>
-    <div style="margin-top:4px;font-size:14px;color:#9cb0d1;">Oluşturma zamanı: ${new Date().toLocaleString('tr-TR')} | 生成时间：${new Date().toLocaleString('tr-TR')}</div>
-  `;
-  content.appendChild(hero);
-
-  function cloneBlock(node){
-    const clone = node.cloneNode(true);
-
-    const cloneCanvases = [...clone.querySelectorAll('canvas')];
-    const liveCanvases = [...node.querySelectorAll('canvas')];
-
-    cloneCanvases.forEach((c, i)=>{
-      const live = liveCanvases[i];
-      const img = document.createElement('img');
-      let src = '';
-      try{
-        src = live ? live.toDataURL('image/png', 1.0) : '';
-      }catch(e){
-        src = '';
+  makeChart("monthlyOrderUserChart",{
+    type:"line",
+    data:{
+      labels:onlyMonths.map(r=>r.monthLabel),
+      datasets:[
+        {
+          label:"Sipariş | 订单",
+          data:onlyMonths.map(r=>r.orders),
+          borderColor:"#18c7ff",
+          backgroundColor:"rgba(24,199,255,.12)",
+          fill:true,
+          tension:.3
+        },
+        {
+          label:"Kullanıcı | 用户",
+          data:onlyMonths.map(r=>r.users),
+          borderColor:"#35d399",
+          backgroundColor:"rgba(53,211,153,.08)",
+          fill:true,
+          tension:.3
+        }
+      ]
+    },
+    options:{
+      scales:{
+        y:{
+          beginAtZero:true,
+          grid:{color:"rgba(110,145,194,.14)"},
+          ticks:{color:"#d7e8ff",callback:countAxis}
+        }
       }
-      img.src = src;
-      const rect = live ? live.getBoundingClientRect() : {width: c.width || 800, height: c.height || 340};
-      img.style.display = 'block';
-      img.style.width = (rect.width || 800) + 'px';
-      img.style.maxWidth = '100%';
-      img.style.height = 'auto';
-      img.style.minHeight = '240px';
-      img.style.objectFit = 'contain';
-      img.style.background = 'transparent';
-      c.parentNode.replaceChild(img, c);
-    });
+    }
+  });
+}
 
-    clone.querySelectorAll('details').forEach(d=>d.setAttribute('open','open'));
-    clone.querySelectorAll('summary').forEach(s=>s.style.display='none');
+function renderCharts(rows){
+  const daily = buildDaily(rows);
+  const typeStats = buildTypeStats(rows);
+  const methods = buildMethods(rows);
+  const packages = buildPackages(rows).slice(0,10);
 
-    return clone;
-  }
-
-  const kpis = document.getElementById('kpis');
-  if(kpis && kpis.children.length){
-    content.appendChild(cloneBlock(kpis));
-  }
-
-  [...document.querySelectorAll('.section-toggle')].forEach((details, idx)=>{
-    if(!details.hasAttribute('open')) return;
-    const titleText = (details.querySelector('summary span')?.textContent || `Bölüm ${idx+1}`).trim();
-    const title = document.createElement('h2');
-    title.textContent = titleText;
-    title.style.fontSize = '24px';
-    title.style.margin = '28px 0 14px';
-    title.style.color = '#eef4ff';
-    content.appendChild(title);
-
-    const body = details.querySelector('.section-body');
-    if(body){
-      const bodyWrap = document.createElement('div');
-      bodyWrap.appendChild(cloneBlock(body));
-      content.appendChild(bodyWrap);
+  makeChart("dailyChart",{
+    type:"line",
+    data:{
+      labels:daily.map(r=>r.day),
+      datasets:[
+        {
+          label:"USD Ciro | 美元营收",
+          data:daily.map(r=>r.usd),
+          borderColor:"#18c7ff",
+          backgroundColor:"rgba(24,199,255,.12)",
+          fill:true,
+          tension:.3,
+          yAxisID:"y"
+        },
+        {
+          label:"Sipariş | 订单",
+          data:daily.map(r=>r.orders),
+          borderColor:"#ffcc00",
+          backgroundColor:"rgba(255,204,0,.08)",
+          fill:false,
+          tension:.3,
+          yAxisID:"y1"
+        }
+      ]
+    },
+    options:{
+      scales:{
+        y:{
+          beginAtZero:true,
+          position:"left",
+          grid:{color:"rgba(110,145,194,.14)"},
+          ticks:{color:"#d7e8ff",callback:moneyAxis}
+        },
+        y1:{
+          beginAtZero:true,
+          position:"right",
+          grid:{drawOnChartArea:false},
+          ticks:{color:"#d7e8ff",callback:countAxis}
+        }
+      }
     }
   });
 
-  exportRoot.appendChild(content);
-  document.body.appendChild(exportRoot);
-
-  try{
-    const imgs = [...exportRoot.querySelectorAll('img')];
-    await Promise.all(imgs.map(img => {
-      if (img.complete) return Promise.resolve();
-      return new Promise(res => {
-        img.onload = ()=>res();
-        img.onerror = ()=>res();
-      });
-    }));
-
-    const canvas = await html2canvas(content, {
-      backgroundColor: '#07111f',
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      logging: false,
-      windowWidth: 1600,
-      width: content.scrollWidth,
-      height: content.scrollHeight,
-      scrollX: 0,
-      scrollY: 0
-    });
-
-    const pdf = new jsPDF({orientation:'landscape', unit:'pt', format:'a4'});
-    const pageW = pdf.internal.pageSize.getWidth();
-    const pageH = pdf.internal.pageSize.getHeight();
-
-    const headerH = 58;
-    const margin = 24;
-    const usableW = pageW - margin*2;
-    const usableH = pageH - margin*2 - headerH - 8;
-
-    const pixelsPerPt = canvas.width / usableW;
-    const sliceHeightPx = Math.floor(usableH * pixelsPerPt);
-
-    const pageCanvas = document.createElement('canvas');
-    const pageCtx = pageCanvas.getContext('2d');
-
-    let sourceY = 0;
-    let page = 0;
-
-    while(sourceY < canvas.height){
-      if(page > 0) pdf.addPage();
-
-      pdf.setFillColor(13,27,46);
-      pdf.roundedRect(margin, margin, pageW - margin*2, headerH, 14, 14, 'F');
-      pdf.setFont('helvetica','bold');
-      pdf.setTextColor(24,199,255);
-      pdf.setFontSize(24);
-      pdf.text('YAVER', margin + 18, margin + 36);
-      pdf.setFont('helvetica','bold');
-      pdf.setTextColor(238,244,255);
-      pdf.setFontSize(15);
-      pdf.text(`Odeme Istihbarat Paneli | ${selectedMap[state.filteredType]}`, margin + 110, margin + 24);
-      pdf.setFont('helvetica','normal');
-      pdf.setTextColor(156,176,209);
-      pdf.setFontSize(10);
-      pdf.text('PDF Report', margin + 110, margin + 40);
-
-      const remainingPx = canvas.height - sourceY;
-      const currentSlicePx = Math.min(sliceHeightPx, remainingPx);
-
-      pageCanvas.width = canvas.width;
-      pageCanvas.height = currentSlicePx;
-      pageCtx.clearRect(0,0,pageCanvas.width,pageCanvas.height);
-      pageCtx.drawImage(canvas, 0, sourceY, canvas.width, currentSlicePx, 0, 0, canvas.width, currentSlicePx);
-
-      const pageImgData = pageCanvas.toDataURL('image/png');
-      const pageImgH = currentSlicePx * usableW / canvas.width;
-      pdf.addImage(pageImgData, 'PNG', margin, margin + headerH + 8, usableW, pageImgH, undefined, 'FAST');
-
-      sourceY += currentSlicePx;
-      page += 1;
+  makeChart("typeChart",{
+    type:"bar",
+    data:{
+      labels:typeStats.map(r=>r.label),
+      datasets:[
+        {
+          label:"Sipariş | 订单",
+          data:typeStats.map(r=>r.orders),
+          backgroundColor:["#ffcc00","#35d399"],
+          yAxisID:"y"
+        },
+        {
+          label:"USD Ciro | 美元营收",
+          data:typeStats.map(r=>r.usd),
+          backgroundColor:["rgba(255,204,0,.45)","rgba(53,211,153,.45)"],
+          yAxisID:"y1"
+        }
+      ]
+    },
+    options:{
+      scales:{
+        y:{
+          beginAtZero:true,
+          position:"left",
+          grid:{color:"rgba(110,145,194,.14)"},
+          ticks:{color:"#d7e8ff",callback:countAxis}
+        },
+        y1:{
+          beginAtZero:true,
+          position:"right",
+          grid:{drawOnChartArea:false},
+          ticks:{color:"#d7e8ff",callback:moneyAxis}
+        }
+      }
     }
+  });
 
-    pdf.save(`yaver-rapor-${state.filteredType}-${new Date().toISOString().slice(0,10)}.pdf`);
-    setStatus('PDF hazırlandı ve indirildi. Grafikler ve Çince metinler görsel olarak korundu. | PDF 已生成并下载，图表与中文内容已按视觉保留。');
-  }catch(err){
-    console.error(err);
-    setStatus('PDF oluşturma hatası | PDF 生成错误: ' + err.message, true);
-  }finally{
-    exportRoot.remove();
-  }
+  makeChart("methodChart",{
+    type:"bar",
+    data:{
+      labels:methods.map(r=>r.method),
+      datasets:[
+        {
+          label:"USD Ciro | 美元营收",
+          data:methods.map(r=>r.usd),
+          backgroundColor:"#3b82f6"
+        }
+      ]
+    },
+    options:{
+      scales:{
+        y:{
+          beginAtZero:true,
+          grid:{color:"rgba(110,145,194,.14)"},
+          ticks:{color:"#d7e8ff",callback:moneyAxis}
+        }
+      }
+    }
+  });
+
+  makeChart("packageChart",{
+    type:"bar",
+    data:{
+      labels:packages.map(r=>r.name),
+      datasets:[
+        {
+          label:"USD Ciro | 美元营收",
+          data:packages.map(r=>r.usd),
+          backgroundColor:"#18c7ff"
+        }
+      ]
+    },
+    options:{
+      indexAxis:"y",
+      scales:{
+        y:{
+          grid:{display:false},
+          ticks:{color:"#d7e8ff"}
+        },
+        x:{
+          beginAtZero:true,
+          grid:{color:"rgba(110,145,194,.14)"},
+          ticks:{color:"#d7e8ff",callback:moneyAxis}
+        }
+      }
+    }
+  });
 }
+
+function renderTables(rows){
+  const packages = buildPackages(rows);
+  const users = buildUsers(rows);
+  const risks = buildRisks(rows);
+
+  el("packageTableBody").innerHTML = packages.length ? packages.map(p=>`
+    <tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${p.type}</td>
+      <td>${fmtNum(p.orders)}</td>
+      <td>${fmtNum(p.users)}</td>
+      <td>${fmtMoney(p.usd)}</td>
+      <td>${fmtTRY(p.tryTotal)}</td>
+      <td>${fmtMoney(p.aov)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="7">Veri yok | 无数据</td></tr>`;
+
+  el("userTableBody").innerHTML = users.length ? users.slice(0,60).map(u=>`
+    <tr>
+      <td>${escapeHtml(u.id)}</td>
+      <td>${fmtNum(u.orders)}</td>
+      <td>${fmtMoney(u.usd)}</td>
+      <td>${fmtTRY(u.tryTotal)}</td>
+      <td>${fmtDate(u.lastPay)}</td>
+      <td>${escapeHtml(u.dominantPackage)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="6">Veri yok | 无数据</td></tr>`;
+
+  el("riskTableBody").innerHTML = risks.length ? risks.map(r=>`
+    <tr>
+      <td>${r.type}</td>
+      <td>${escapeHtml(r.value)}</td>
+      <td>${fmtNum(r.users)}</td>
+      <td>${escapeHtml(r.sample)}</td>
+    </tr>
+  `).join("") : `<tr><td colspan="4">Eşik üstü risk kümesi bulunmadı | 未发现超过阈值的风险簇</td></tr>`;
+
+  el("previewTableBody").innerHTML = rows.slice(0,200).map(r=>`
+    <tr>
+      <td>${fmtDate(r.payTime)}</td>
+      <td>${escapeHtml(r.displayId)}</td>
+      <td>${escapeHtml(r.productName)}</td>
+      <td>${typeLabel(r.typeClass)}</td>
+      <td>${fmtMoney(r.price)}</td>
+      <td>${fmtTRY(r.localPrice)}</td>
+      <td>${escapeHtml(r.orderStatus || r.paidStatus || "-")}</td>
+      <td>${escapeHtml(r.method)}</td>
+      <td>${escapeHtml(r.device)}</td>
+    </tr>
+  `).join("");
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;",
+    "<":"&lt;",
+    ">":"&gt;",
+    '"':"&quot;",
+    "'":"&#39;"
+  }[m]));
+}
+
+function render(){
+  if(!state.rows.length){
+    setStatus("Henüz veri yüklenmedi. | 尚未加载数据。");
+    return;
+  }
+
+  const rows = rowsByFilter();
+  const basic = aggregateBasic(rows);
+  const dateMin = rows.length ? rows.map(r=>r.payTime).sort((a,b)=>a-b)[0] : null;
+  const dateMax = rows.length ? rows.map(r=>r.payTime).sort((a,b)=>b-a)[0] : null;
+
+  setStatus(
+    `${typeLabel(state.filteredType)} seçili. ${fmtNum(basic.orders)} sipariş, ${fmtNum(basic.users)} kullanıcı, ${fmtMoney(basic.usd)} USD. Tarih: ${fmtDate(dateMin)} - ${fmtDate(dateMax)} | 已选择 ${typeLabel(state.filteredType)}。${fmtNum(basic.orders)} 笔订单，${fmtNum(basic.users)} 名用户。`
+  );
+
+  renderKpis(rows);
+  renderMonthly(rows);
+  renderCharts(rows);
+  renderTables(rows);
+
+  document.querySelectorAll(".seg-btn").forEach(btn=>{
+    btn.classList.toggle("active", btn.dataset.type === state.filteredType);
+  });
+}
+
 async function loadFile(file){
   try{
-    setStatus(`Yükleniyor: ${file.name} ... | 正在加载：${file.name} ...`);
+    setStatus(`Yükleniyor: ${file.name} | 正在加载：${file.name}`);
+
     const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer,{type:'array'});
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const rawRows = XLSX.utils.sheet_to_json(ws,{defval:''});
+    const workbook = XLSX.read(buffer,{type:"array"});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rawRows = XLSX.utils.sheet_to_json(sheet,{defval:""});
+
     const rows = normalizeRows(rawRows);
-    if(!rows.length) throw new Error('Geçerli satır bulunamadı. Kolon adları veya tarih biçimi uyuşmuyor olabilir. | 未找到有效行，列名或日期格式可能不匹配。');
+
+    if(!rows.length){
+      throw new Error("Geçerli satır bulunamadı. Kolon adları veya tarih biçimi uyuşmuyor olabilir. | 未找到有效行，列名或日期格式可能不匹配。");
+    }
+
     state.rows = rows;
     render();
+
   }catch(err){
     console.error(err);
-    setStatus('Yükleme hatası | 加载错误: ' + err.message + ' | Analiz akışı güvenli modda durduruldu. | 分析流程已安全停止。', true);
+    setStatus("Yükleme hatası | 加载错误: " + err.message, true);
   }
 }
-el('fileInput').addEventListener('change', e=>{ const f=e.target.files[0]; if(f) loadFile(f); });
-el('pdfBtn').addEventListener('click', exportPdfReport);
-el('packageSelect').addEventListener('change', renderSinglePackageChart);
-el('packageMetricSelect').addEventListener('change', renderSinglePackageChart);
-el('packageGranularitySelect').addEventListener('change', renderSinglePackageChart);
-el('highUserSelect').addEventListener('change', renderHighUser);
-document.querySelectorAll('.seg-btn').forEach(btn=> btn.addEventListener('click', ()=>{ state.filteredType = btn.dataset.type; if(state.rows.length) render(); else { document.querySelectorAll('.seg-btn').forEach(b=>b.classList.toggle('active', b===btn)); } }));
-const dz = el('dropZone');
-['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault(); dz.classList.add('drag');}));
-['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault(); dz.classList.remove('drag');}));
-dz.addEventListener('drop', e=>{ const f=e.dataTransfer.files[0]; if(f) loadFile(f); });
+
+async function exportPdf(){
+  if(!state.rows.length){
+    setStatus("Önce veri yüklemelisin. | 请先加载数据。", true);
+    return;
+  }
+
+  if(!window.jspdf || !window.html2canvas){
+    setStatus("PDF kütüphaneleri yüklenemedi. | PDF 库未加载。", true);
+    return;
+  }
+
+  setStatus("PDF hazırlanıyor... | 正在生成 PDF...");
+
+  const root = el("reportRoot");
+  const canvas = await html2canvas(root,{
+    backgroundColor:"#07111f",
+    scale:2,
+    useCORS:true,
+    logging:false
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF("landscape","pt","a4");
+
+  const pageW = pdf.internal.pageSize.getWidth();
+  const pageH = pdf.internal.pageSize.getHeight();
+  const margin = 24;
+  const imgW = pageW - margin * 2;
+  const imgH = canvas.height * imgW / canvas.width;
+
+  let heightLeft = imgH;
+  let position = margin;
+
+  pdf.addImage(imgData,"PNG",margin,position,imgW,imgH);
+  heightLeft -= pageH;
+
+  while(heightLeft > 0){
+    position = heightLeft - imgH + margin;
+    pdf.addPage();
+    pdf.addImage(imgData,"PNG",margin,position,imgW,imgH);
+    heightLeft -= pageH;
+  }
+
+  const fileName = `yaver_odeme_raporu_${state.filteredType}_${new Date().toISOString().slice(0,10)}.pdf`;
+  pdf.save(fileName);
+
+  setStatus("PDF hazırlandı. | PDF 已生成。");
+}
+
+el("fileInput").addEventListener("change", e=>{
+  const f = e.target.files[0];
+  if(f) loadFile(f);
+});
+
+el("pdfBtn").addEventListener("click", exportPdf);
+
+document.querySelectorAll(".seg-btn").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    state.filteredType = btn.dataset.type;
+    render();
+  });
+});
+
+const dz = el("dropZone");
+
+["dragenter","dragover"].forEach(ev=>{
+  dz.addEventListener(ev, e=>{
+    e.preventDefault();
+    dz.classList.add("drag");
+  });
+});
+
+["dragleave","drop"].forEach(ev=>{
+  dz.addEventListener(ev, e=>{
+    e.preventDefault();
+    dz.classList.remove("drag");
+  });
+});
+
+dz.addEventListener("drop", e=>{
+  const f = e.dataTransfer.files[0];
+  if(f) loadFile(f);
+});
 </script>
 </body>
 </html>
